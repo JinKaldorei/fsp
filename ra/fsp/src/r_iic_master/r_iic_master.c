@@ -421,7 +421,7 @@ static void iic_master_open_hw_master (iic_master_instance_ctrl_t * const p_ctrl
                                      p_extend->clock_settings.brh_value);
 
     /* Set the internal reference clock source for generating IIC clock */
-    p_ctrl->p_reg->MR1 = (uint32_t) (IIC_MASTER_BUS_MODE_REGISTER_1_MASK |
+    p_ctrl->p_reg->MR1 = (uint32_t) (IIC_MASTER_BUS_1_MASK |
                                      (uint8_t) ((p_extend->
                                                  clock_settings.cks_value &
                                                  IIC_MASTER_INTERNAL_REF_CLOCK_SELECT_MAX) << 4U));
