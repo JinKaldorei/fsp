@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2020 - 2024 Renesas Electronics Corporation and/or its affiliates
+* Copyright (c) 2020 - 2025 Renesas Electronics Corporation and/or its affiliates
 *
 * SPDX-License-Identifier: BSD-3-Clause
 */
@@ -31,111 +31,96 @@ extern "C" {
 /**********************************************************************************************************************
  * Macro definitions
  **********************************************************************************************************************/
- #if defined(BSP_MCU_GROUP_RA6M5) || defined(BSP_MCU_GROUP_RA6M3) || defined(BSP_MCU_GROUP_RA8M1) || defined(BSP_MCU_GROUP_RA8D1)
+ #if (BSP_FEATURE_USB_HAS_USBFS == 1) && (BSP_FEATURE_USB_HAS_USBHS == 1)
 
   #define USB_HIGH_SPEED_MODULE
-  #define USB_IP0_MODULE    USB_FS_MODULE
-  #define USB_IP1_MODULE    USB_HS_MODULE
+  #define USB_IP0_MODULE                        USB_FS_MODULE
+  #define USB_IP1_MODULE                        USB_HS_MODULE
 
-  #define USB_NUM_USBIP     (2U)
+  #define USB_NUM_USBIP                         (2U)
 
- #endif                                /* defined(BSP_MCU_GROUP_RA6M5) || defined(BSP_MCU_GROUP_RA6M3) */
+ #endif
 
- #if defined(BSP_MCU_GROUP_RA2A1) || defined(BSP_MCU_GROUP_RA6E2) || defined(BSP_MCU_GROUP_RA6T3) || \
-    defined(BSP_MCU_GROUP_RA4E2) || defined(BSP_MCU_GROUP_RA6E1) || defined(BSP_MCU_GROUP_RA4E1)     \
-    || defined(BSP_MCU_GROUP_RA4M1) || defined(BSP_MCU_GROUP_RA4M2) || defined(BSP_MCU_GROUP_RA4M3)  \
-    || defined(BSP_MCU_GROUP_RA4W1) || defined(BSP_MCU_GROUP_RA6M1) || defined(BSP_MCU_GROUP_RA6M2)  \
-    || defined(BSP_MCU_GROUP_RA6M4) || defined(BSP_MCU_GROUP_RA8T1)
+ #if (BSP_FEATURE_USB_HAS_USBFS == 1) && (BSP_FEATURE_USB_HAS_USBHS == 0)
+  #define USB_IP0_MODULE                        USB_FS_MODULE
+  #define USB_IP1_MODULE                        USB_NOT_SUPPORT
 
-  #define USB_IP0_MODULE    USB_FS_MODULE
-  #define USB_IP1_MODULE    USB_NOT_SUPPORT
+  #define USB_NUM_USBIP                         (1U)
+ #endif
 
-  #define USB_NUM_USBIP     (1U)
- #endif                                /* defined(BSP_MCU_GROUP_RA2A1 || defined(BSP_MCU_GROUP_RA6E2) || defined(BSP_MCU_GROUP_RA6T3) || defined(BSP_MCU_GROUP_RA4E2) */
-
- #if defined(BSP_MCU_GROUP_RA2A1) || defined(BSP_MCU_GROUP_RA6E2) || defined(BSP_MCU_GROUP_RA6T3) || \
-    defined(BSP_MCU_GROUP_RA4E2)
-
-  #define USB_SUPPORT_MINI_MODULE
-  #define USB_NOT_SUPPORT_HOST
-  #define USB_NOT_SUPPORT_DMAC
-
- #endif                                      /* defined(BSP_MCU_GROUP_RA2A1) || defined(BSP_MCU_GROUP_RA6E2) || defined(BSP_MCU_GROUP_RA6T3) || defined(BSP_MCU_GROUP_RA4E2) */
-
- #if defined(BSP_MCU_GROUP_RA2A1) || defined(BSP_MCU_GROUP_RA4W1)
-
-  #define USB_SUPPORT_PERI_LS                /* USB Peripheral Low-speed Support Module */
-
- #endif                                      /* defined(BSP_MCU_GROUP_RA2A1) */
-
- #if defined(BSP_MCU_GROUP_RA2A1)
+ #if defined(__CM23_REV)
 
   #define USB_UNALIGNED_MEMORY_ACCESS_NG_MCU /* Coretex M23 etc */
 
- #endif                                      /* defined(BSP_MCU_GROUP_RA2A1) */
+ #endif
 
- #if defined(BSP_MCU_GROUP_RA2A1)
+ #if (BSP_FEATURE_USB_HAS_PIPE04567 == 1)
 
-  #define USB_SUPPORT_HOCO_MODULE            /* UCKSELC bit */
+  #define USB_SUPPORT_MINI_MODULE
 
- #endif                                      /* defined(BSP_MCU_GROUP_RA2A1) */
+ #endif
 
- #if defined(BSP_MCU_GROUP_RA2A1) || defined(BSP_MCU_GROUP_RA4M1)
+ #if (BSP_FEATURE_USB_HAS_NOT_HOST == 1)
 
-  #define USB_LDO_REGULATOR_MODULE           /* VDCEN bit */
+  #define USB_NOT_SUPPORT_HOST
 
- #endif                                      /* (BSP_MCU_GROUP_RA2A1) || defined(BSP_MCU_GROUP_RA4M1) */
+ #endif
 
- #if defined(BSP_MCU_GROUP_RA4M1) || defined(BSP_MCU_GROUP_RA4W1) || defined(BSP_MCU_GROUP_RA2A1)
+ #if (BSP_FEATURE_USB_HAS_USBLS_PERI == 1)
 
-  #define USB_SUPPORT_VDDUSBE                /* VDDUSBE bit */
+  #define USB_SUPPORT_PERI_LS          /* USB Peripheral Low-speed Support Module */
 
- #endif                                      /* defined(BSP_MCU_GROUP_RA4M1) || defined(BSP_MCU_GROUP_RA4W1) || defined(BSP_MCU_GROUP_RA2A1) */
+ #endif
 
- #if defined(BSP_MCU_GROUP_RA6M3) || defined(BSP_MCU_GROUP_RA6M2) || defined(BSP_MCU_GROUP_RA6M1)
+ #if (BSP_FEATURE_USB_REG_UCKSEL_UCKSELC == 1)
 
-  #define USB_SUPPORT_PHYSLEW                /* PHYSLEW bit */
+  #define USB_SUPPORT_HOCO_MODULE      /* UCKSELC bit */
 
- #endif                                      /* defined(BSP_MCU_GROUP_RA6M3) || defined(BSP_MCU_GROUP_RA6M2) || defined(BSP_MCU_GROUP_RA6M1) */
+ #endif
 
- #if defined(BSP_MCU_GROUP_RA6M3) || defined(BSP_MCU_GROUP_RA6M2) || defined(BSP_MCU_GROUP_RA6M1)
+ #if (BSP_FEATURE_USB_REG_USBMC_VDCEN == 1)
 
-  #define USB_PHYSLEW_VALUE    (0xEU)
+  #define USB_LDO_REGULATOR_MODULE     /* VDCEN bit */
 
- #endif                                /* defined(BSP_MCU_GROUP_RA6M3) || defined(BSP_MCU_GROUP_RA6M2) || defined(BSP_MCU_GROUP_RA6M1) */
+ #endif
 
- #if defined(BSP_MCU_GROUP_RA6M3) || (BSP_CFG_MCU_PART_SERIES == 8)
+ #if (BSP_FEATURE_USB_REG_USBMC_VDDUSBE == 1)
 
-  #define USB_CNEN_SYSCFG_USB_IP1      /* CNEN bit */
-  #define USB_SUPPORT_BC_HS            /* Battery Charging in High-speed module */
+  #define USB_SUPPORT_VDDUSBE          /* VDDUSBE bit */
 
- #endif                                /* defined(BSP_MCU_GROUP_RA6M3) || (BSP_CFG_MCU_PART_SERIES == 8) */
+ #endif
 
- #if defined(BSP_MCU_GROUP_RA2A1)
+ #if (BSP_FEATURE_USB_REG_PHYSLEW == 1)
 
-  #define USB_CNEN_SYSCFG_USB_IP0      /* CNEN bit */
+  #define USB_SUPPORT_PHYSLEW          /* PHYSLEW bit */
+  #define USB_PHYSLEW_VALUE      BSP_FEATURE_USB_REG_PHYSLEW_VALUE
+
+ #endif
+
+ #if (BSP_FEATURE_USB_HAS_USBHS_BC == 1)
+
+  #define BSP_FEATURE_USBHS_REG_SYSCFG_CNEN /* CNEN bit */
+  #define USB_SUPPORT_BC_HS                 /* Battery Charging in High-speed module */
+
+ #endif
+
+ #if (BSP_FEATURE_USB_HAS_USBFS_BC == 1)
+
   #define USB_SUPPORT_BC_FS            /* Battery Charging in Full-speed module*/
 
- #endif                                /* defined(USB_SUPPORT_MINI_MODULE) */                            /* defined(BSP_MCU_GROUP_RA2A1 */
+ #endif
 
- #if defined(BSP_MCU_GROUP_RA6E2) || defined(BSP_MCU_GROUP_RA6T3) || defined(BSP_MCU_GROUP_RA4E2)   \
-    || defined(BSP_MCU_GROUP_RA4M1) || defined(BSP_MCU_GROUP_RA4M2) || defined(BSP_MCU_GROUP_RA4M3) \
-    || defined(BSP_MCU_GROUP_RA4W1) || defined(BSP_MCU_GROUP_RA6M5)                                 \
-    || defined(BSP_MCU_GROUP_RA6M4) || defined(BSP_MCU_GROUP_RA6E1) || defined(BSP_MCU_GROUP_RA4E1)
+ #if (BSP_FEATURE_USB_REG_PHYSECTRL_CNEN == 1)
 
   #define USB_CNEN_PHYSECTRL_USB_IP0   /* CNEN bit */
 
-  #if defined(BSP_MCU_GROUP_RA6M5)
-   #define USB_SUPPORT_BC_HS           /* Battery Charging in High-speed module */
-   #define USB_SUPPORT_BC_FS           /* Battery Charging in Full-speed module */
-  #endif                               /* defined(BSP_MCU_GROUP_RA6M5) */
+ #endif
 
-  #if defined(BSP_MCU_GROUP_RA4M1) || defined(BSP_MCU_GROUP_RA4M2) || defined(BSP_MCU_GROUP_RA4M3)     \
-    || defined(BSP_MCU_GROUP_RA4W1) || defined(BSP_MCU_GROUP_RA6M4) || defined(BSP_MCU_GROUP_RA6E1) || \
-    defined(BSP_MCU_GROUP_RA4E1)
-   #define USB_SUPPORT_BC_FS
-  #endif                               /* defined(BSP_MCU_GROUP_RA4M1) || defined(BSP_MCU_GROUP_RA4M2) || defined(BSP_MCU_GROUP_RA4M3) */
- #endif                                /* defined(BSP_MCU_GROUP_RA6E2) || defined(BSP_MCU_GROUP_RA6T3) || defined(BSP_MCU_GROUP_RA4E2) */
+ #if (BSP_FEATURE_USB_HAS_TYPEC == 1)
+
+  #define USB_SUPPORT_TYPEC            /* USB Type-C Support Module */
+
+ #endif
 
 /* Version Number of API. */
  #define USB_VERSION_MAJOR        (1)
@@ -314,11 +299,7 @@ extern "C" {
   #define USB_M1                                (R_USB_HS0)
  #else                                 /* R_USB_HS0 */
   #ifndef R_USB_HS0_BASE
-   #if defined(BSP_MCU_GROUP_RA4M3) || defined(BSP_MCU_GROUP_RA6M4)
-    #define R_USB_HS0_BASE                      (0x40111000)
-   #else                               /* defined(BSP_MCU_GROUP_RA4M3) || defined(BSP_MCU_GROUP_RA6M4) */
-    #define R_USB_HS0_BASE                      (0x40060000)
-   #endif                              /* defined(BSP_MCU_GROUP_RA4M3) || defined(BSP_MCU_GROUP_RA6M4) */
+   #define R_USB_HS0_BASE                       (0x40060000)
   #endif /* R_USB_HS0_BASE */
 
   #define USB_M1                                (((R_USB_FS0_Type *) R_USB_HS0_BASE))
@@ -953,39 +934,204 @@ extern "C" {
  #define USB_REL_BLK(ID, BLK)          (usb_cstd_rel_blk((uint8_t) (ID), (usb_utr_t *) (BLK)))
 
 /* Descriptor size */
- #define USB_DEVICESIZE     (20U)      /* Device Descriptor size */
- #ifdef USB_CFG_HUVC_USE
-  #define USB_CONFIGSIZE    (3 * 1024) /* Configuration Descriptor size */
+ #define USB_DEVICESIZE        (20U)      /* Device Descriptor size */
+ #if defined(USB_CFG_HUVC_USE) || defined(USB_CFG_HAUD_USE)
+  #define USB_CONFIGSIZE       (3 * 1024) /* Configuration Descriptor size */
  #else
-  #define USB_CONFIGSIZE    (1 * 1024) /* Configuration Descriptor size */
- #endif /* USB_CFG_HUVC_USE */
+  #define USB_CONFIGSIZE       (1 * 1024) /* Configuration Descriptor size */
+ #endif /* defined(USB_CFG_HUVC_USE) || defined(USB_CFG_HAUD_USE) */
 
 /* Number of software retries when a no-response condition occurs during a transfer */
- #define USB_PIPEERROR      (1U)
+ #define USB_PIPEERROR         (1U)
+
+/* Debug Print Buffer Size */
+ #define USB_PRINT_BUF_SIZE    (64U)
 
 /** [Output debugging message in a console of IDE.]
  *   not defined(USB_DEBUG_ON) : No output the debugging message
  *   defined(USB_DEBUG_ON)     : Output the debugging message
  */
  #if defined(USB_DEBUG_ON)
-  #define USB_PRINTF0(FORM)                                (printf(FORM))
-  #define USB_PRINTF1(FORM, x1)                            (printf((FORM), (x1)))
-  #define USB_PRINTF2(FORM, x1, x2)                        (printf((FORM), (x1), (x2)))
-  #define USB_PRINTF3(FORM, x1, x2, x3)                    (printf((FORM), (x1), (x2), (x3)))
-  #define USB_PRINTF4(FORM, x1, x2, x3, x4)                (printf((FORM), (x1), (x2), (x3), (x4)))
-  #define USB_PRINTF5(FORM, x1, x2, x3, x4, x5)            (printf((FORM), (x1), (x2), (x3), (x4), (x5)))
-  #define USB_PRINTF6(FORM, x1, x2, x3, x4, x5, x6)        (printf((FORM), (x1), (x2), (x3), (x4), (x5), (x6)))
-  #define USB_PRINTF7(FORM, x1, x2, x3, x4, x5, x6, x7)    (printf((FORM), (x1), (x2), (x3), (x4), (x5), (x6), (x7)))
-  #define USB_PRINTF8(FORM,                                                                                          \
-                      x1,                                                                                            \
-                      x2,                                                                                            \
-                      x3,                                                                                            \
-                      x4,                                                                                            \
-                      x5,                                                                                            \
-                      x6,                                                                                            \
-                      x7,                                                                                            \
-                      x8)                                  (printf((FORM), (x1), (x2), (x3), (x4), (x5), (x6), (x7), \
-                                                                   (x8)))
+
+  #if USB_DEBUG_ON == 1
+   #define USB_PRINTF0(FORM)                                    (printf(FORM))
+   #define USB_PRINTF1(FORM, x1)                                (printf((FORM), (x1)))
+   #define USB_PRINTF2(FORM, x1, x2)                            (printf((FORM), (x1), (x2)))
+   #define USB_PRINTF3(FORM, x1, x2, x3)                        (printf((FORM), (x1), (x2), (x3)))
+   #define USB_PRINTF4(FORM, x1, x2, x3, x4)                    (printf((FORM), (x1), (x2), (x3), (x4)))
+   #define USB_PRINTF5(FORM, x1, x2, x3, x4, x5)                (printf((FORM), (x1), (x2), (x3), (x4), (x5)))
+   #define USB_PRINTF6(FORM, x1, x2, x3, x4, x5, x6)            (printf((FORM), (x1), (x2), (x3), (x4), (x5), (x6)))
+   #define USB_PRINTF7(FORM, x1, x2, x3, x4, x5, x6,                                                                \
+                       x7)                                      (printf((FORM), (x1), (x2), (x3), (x4), (x5), (x6), \
+                                                                        (x7)))
+   #define USB_PRINTF8(FORM,                                                                                        \
+                       x1,                                                                                          \
+                       x2,                                                                                          \
+                       x3,                                                                                          \
+                       x4,                                                                                          \
+                       x5,                                                                                          \
+                       x6,                                                                                          \
+                       x7,                                                                                          \
+                       x8)                                      (printf((FORM), (x1), (x2), (x3), (x4), (x5), (x6), \
+                                                                        (x7), (x8)))
+  #elif USB_DEBUG_ON == 2
+   #define USB_PRINTF0(FORM)                                    snprintf((char *) &g_usb_print_buffer[0], \
+                                                                         USB_PRINT_BUF_SIZE,              \
+                                                                         (FORM));                         \
+    g_usb_qe_error_string_length = (uint8_t) strlen((const char *) g_usb_print_buffer)
+   #define USB_PRINTF1(FORM, x1)                                snprintf((char *) &g_usb_print_buffer[0], \
+                                                                         USB_PRINT_BUF_SIZE,              \
+                                                                         (FORM),                          \
+                                                                         (x1));                           \
+    g_usb_qe_error_string_length = (uint8_t) strlen((const char *) g_usb_print_buffer)
+   #define USB_PRINTF2(FORM, x1, x2)                            snprintf((char *) &g_usb_print_buffer[0], \
+                                                                         USB_PRINT_BUF_SIZE,              \
+                                                                         (FORM),                          \
+                                                                         (x1),                            \
+                                                                         (x2));                           \
+    g_usb_qe_error_string_length = (uint8_t) strlen((const char *) g_usb_print_buffer)
+   #define USB_PRINTF3(FORM, x1, x2, x3)                        snprintf((char *) &g_usb_print_buffer[0], \
+                                                                         USB_PRINT_BUF_SIZE,              \
+                                                                         (FORM),                          \
+                                                                         (x1),                            \
+                                                                         (x2),                            \
+                                                                         (x3));                           \
+    g_usb_qe_error_string_length = (uint8_t) strlen((const char *) g_usb_print_buffer)
+   #define USB_PRINTF4(FORM, x1, x2, x3, x4)                    snprintf((char *) &g_usb_print_buffer[0], \
+                                                                         USB_PRINT_BUF_SIZE,              \
+                                                                         (FORM),                          \
+                                                                         (x1),                            \
+                                                                         (x2),                            \
+                                                                         (x3),                            \
+                                                                         (x4));                           \
+    g_usb_qe_error_string_length = (uint8_t) strlen((const char *) g_usb_print_buffer)
+   #define USB_PRINTF5(FORM, x1, x2, x3, x4, x5)                snprintf((char *) &g_usb_print_buffer[0], \
+                                                                         USB_PRINT_BUF_SIZE,              \
+                                                                         (FORM),                          \
+                                                                         (x1),                            \
+                                                                         (x2),                            \
+                                                                         (x3),                            \
+                                                                         (x4),                            \
+                                                                         (x5));                           \
+    g_usb_qe_error_string_length = (uint8_t) strlen((const char *) g_usb_print_buffer)
+   #define USB_PRINTF6(FORM, x1, x2, x3, x4, x5, x6)            snprintf((char *) &g_usb_print_buffer[0], \
+                                                                         USB_PRINT_BUF_SIZE,              \
+                                                                         (FORM),                          \
+                                                                         (x1),                            \
+                                                                         (x2),                            \
+                                                                         (x3),                            \
+                                                                         (x4),                            \
+                                                                         (x5),                            \
+                                                                         (x6));                           \
+    g_usb_qe_error_string_length = (uint8_t) strlen((const char *) g_usb_print_buffer)
+   #define USB_PRINTF7(FORM, x1, x2, x3, x4, x5, x6, x7)        snprintf((char *) &g_usb_print_buffer[0], \
+                                                                         USB_PRINT_BUF_SIZE,              \
+                                                                         (FORM),                          \
+                                                                         (x1),                            \
+                                                                         (x2),                            \
+                                                                         (x3),                            \
+                                                                         (x4),                            \
+                                                                         (x5),                            \
+                                                                         (x6),                            \
+                                                                         (x7));                           \
+    g_usb_qe_error_string_length = (uint8_t) strlen((const char *) g_usb_print_buffer)
+   #define USB_PRINTF8(FORM, x1, x2, x3, x4, x5, x6, x7, x8)    snprintf((char *) &g_usb_print_buffer[0], \
+                                                                         USB_PRINT_BUF_SIZE,              \
+                                                                         (FORM),                          \
+                                                                         (x1),                            \
+                                                                         (x2),                            \
+                                                                         (x3),                            \
+                                                                         (x4),                            \
+                                                                         (x5),                            \
+                                                                         (x6),                            \
+                                                                         (x7),                            \
+                                                                         (x8));                           \
+    g_usb_qe_error_string_length = (uint8_t) strlen((const char *) g_usb_print_buffer)
+  #elif USB_DEBUG_ON == 3
+   #define USB_PRINTF0(FORM)                                    snprintf((char *) &g_usb_print_buffer[0], \
+                                                                         USB_PRINT_BUF_SIZE,              \
+                                                                         (FORM));                         \
+    g_usb_qe_error_string_length = (uint8_t) strlen((const char *) g_usb_print_buffer);                   \
+    printf((FORM))
+   #define USB_PRINTF1(FORM, x1)                                snprintf((char *) &g_usb_print_buffer[0], \
+                                                                         USB_PRINT_BUF_SIZE,              \
+                                                                         (FORM),                          \
+                                                                         (x1));                           \
+    g_usb_qe_error_string_length = (uint8_t) strlen((const char *) g_usb_print_buffer);                   \
+    printf((FORM), (x1))
+   #define USB_PRINTF2(FORM, x1, x2)                            snprintf((char *) &g_usb_print_buffer[0], \
+                                                                         USB_PRINT_BUF_SIZE,              \
+                                                                         (FORM),                          \
+                                                                         (x1),                            \
+                                                                         (x2));                           \
+    g_usb_qe_error_string_length = (uint8_t) strlen((const char *) g_usb_print_buffer);                   \
+    printf((FORM), (x1), (x2))
+   #define USB_PRINTF3(FORM, x1, x2, x3)                        snprintf((char *) &g_usb_print_buffer[0], \
+                                                                         USB_PRINT_BUF_SIZE,              \
+                                                                         (FORM),                          \
+                                                                         (x1),                            \
+                                                                         (x2),                            \
+                                                                         (x3));                           \
+    g_usb_qe_error_string_length = (uint8_t) strlen((const char *) g_usb_print_buffer);                   \
+    printf((FORM), (x1), (x2), (x3))
+   #define USB_PRINTF4(FORM, x1, x2, x3, x4)                    snprintf((char *) &g_usb_print_buffer[0], \
+                                                                         USB_PRINT_BUF_SIZE,              \
+                                                                         (FORM),                          \
+                                                                         (x1),                            \
+                                                                         (x2),                            \
+                                                                         (x3),                            \
+                                                                         (x4));                           \
+    g_usb_qe_error_string_length = (uint8_t) strlen((const char *) g_usb_print_buffer);                   \
+    printf((FORM), (x1), (x2), (x3), (x4))
+   #define USB_PRINTF5(FORM, x1, x2, x3, x4, x5)                snprintf((char *) &g_usb_print_buffer[0], \
+                                                                         USB_PRINT_BUF_SIZE,              \
+                                                                         (FORM),                          \
+                                                                         (x1),                            \
+                                                                         (x2),                            \
+                                                                         (x3),                            \
+                                                                         (x4),                            \
+                                                                         (x5));                           \
+    g_usb_qe_error_string_length = (uint8_t) strlen((const char *) g_usb_print_buffer);                   \
+    printf((FORM), (x1), (x2), (x3), (x4), (x5))
+   #define USB_PRINTF6(FORM, x1, x2, x3, x4, x5, x6)            snprintf((char *) &g_usb_print_buffer[0], \
+                                                                         USB_PRINT_BUF_SIZE,              \
+                                                                         (FORM),                          \
+                                                                         (x1),                            \
+                                                                         (x2),                            \
+                                                                         (x3),                            \
+                                                                         (x4),                            \
+                                                                         (x5),                            \
+                                                                         (x6));                           \
+    g_usb_qe_error_string_length = (uint8_t) strlen((const char *) g_usb_print_buffer);                   \
+    printf((FORM), (x1), (x2), (x3), (x4), (x5), (x6))
+   #define USB_PRINTF7(FORM, x1, x2, x3, x4, x5, x6, x7)        snprintf((char *) &g_usb_print_buffer[0], \
+                                                                         USB_PRINT_BUF_SIZE,              \
+                                                                         (FORM),                          \
+                                                                         (x1),                            \
+                                                                         (x2),                            \
+                                                                         (x3),                            \
+                                                                         (x4),                            \
+                                                                         (x5),                            \
+                                                                         (x6),                            \
+                                                                         (x7));                           \
+    g_usb_qe_error_string_length = (uint8_t) strlen((const char *) g_usb_print_buffer);                   \
+    printf((FORM), (x1), (x2), (x3), (x4), (x5), (x6), (x7))
+   #define USB_PRINTF8(FORM, x1, x2, x3, x4, x5, x6, x7, x8)    snprintf((char *) &g_usb_print_buffer[0], \
+                                                                         USB_PRINT_BUF_SIZE,              \
+                                                                         (FORM),                          \
+                                                                         (x1),                            \
+                                                                         (x2),                            \
+                                                                         (x3),                            \
+                                                                         (x4),                            \
+                                                                         (x5),                            \
+                                                                         (x6),                            \
+                                                                         (x7),                            \
+                                                                         (x8));                           \
+    g_usb_qe_error_string_length = (uint8_t) strlen((const char *) g_usb_print_buffer);                   \
+    printf((FORM), (x1), (x2), (x3), (x4), (x5), (x6), (x7), (x8))
+
+  #endif
+
  #else                                 /* defined(USB_DEBUG_ON) */
   #define USB_PRINTF0(FORM)
   #define USB_PRINTF1(FORM, x1)

@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2020 - 2024 Renesas Electronics Corporation and/or its affiliates
+* Copyright (c) 2020 - 2025 Renesas Electronics Corporation and/or its affiliates
 *
 * SPDX-License-Identifier: BSD-3-Clause
 */
@@ -57,24 +57,44 @@ static const hw_sce_ecc_generatesign_t g_ecdsa_generate_sign_lookup[][2] =
         HW_SCE_ECC_256HrkGenerateSign,
    #endif
   #endif
-  #if defined(MBEDTLS_ECP_DP_SECP384R1_ENABLED) || defined(MBEDTLS_ECP_DP_BP384R1_ENABLED)
-   #if PSA_CRYPTO_IS_PLAINTEXT_SUPPORT_REQUIRED(PSA_CRYPTO_CFG_ECC_FORMAT)
+  #if !BSP_FEATURE_RSIP_RSIP_E11A_SUPPORTED
+   #if defined(MBEDTLS_ECP_DP_SECP384R1_ENABLED) || defined(MBEDTLS_ECP_DP_BP384R1_ENABLED)
+    #if PSA_CRYPTO_IS_PLAINTEXT_SUPPORT_REQUIRED(PSA_CRYPTO_CFG_ECC_FORMAT)
     [RM_PSA_CRYPTO_ECP_LOOKUP_INDEX(ECC_384_PRIVATE_KEY_LENGTH_BITS)][RM_PSA_CRYPTO_ECC_KEY_PLAINTEXT] =
         HW_SCE_ECC_384GenerateSign,
-   #endif
-   #if PSA_CRYPTO_IS_WRAPPED_SUPPORT_REQUIRED(PSA_CRYPTO_CFG_ECC_FORMAT)
+    #endif
+    #if PSA_CRYPTO_IS_WRAPPED_SUPPORT_REQUIRED(PSA_CRYPTO_CFG_ECC_FORMAT)
     [RM_PSA_CRYPTO_ECP_LOOKUP_INDEX(ECC_384_PRIVATE_KEY_LENGTH_BITS)][RM_PSA_CRYPTO_ECC_KEY_WRAPPED] =
         HW_SCE_ECC_384HrkGenerateSign,
+    #endif
    #endif
-  #endif
-  #if defined(MBEDTLS_ECP_DP_SECP521R1_ENABLED)
-   #if PSA_CRYPTO_IS_PLAINTEXT_SUPPORT_REQUIRED(PSA_CRYPTO_CFG_ECC_FORMAT)
+   #if defined(MBEDTLS_ECP_DP_SECP521R1_ENABLED)
+    #if PSA_CRYPTO_IS_PLAINTEXT_SUPPORT_REQUIRED(PSA_CRYPTO_CFG_ECC_FORMAT)
     [RM_PSA_CRYPTO_ECP_LOOKUP_INDEX(ECC_521_PRIVATE_KEY_LENGTH_BITS)][RM_PSA_CRYPTO_ECC_KEY_PLAINTEXT] =
         HW_SCE_ECC_521GenerateSign,
+    #endif
+    #if PSA_CRYPTO_IS_WRAPPED_SUPPORT_REQUIRED(PSA_CRYPTO_CFG_ECC_FORMAT)
+    [RM_PSA_CRYPTO_ECP_LOOKUP_INDEX(ECC_521_PRIVATE_KEY_LENGTH_BITS)][RM_PSA_CRYPTO_ECC_KEY_WRAPPED] =
+        HW_SCE_ECC_521HrkGenerateSign,
+    #endif
+   #endif
+  #endif
+};
+
+static const hw_sce_ecc_generatesign_t g_ed_ecdsa_generate_sign_lookup[][2] =
+{
+  #if defined(MBEDTLS_ECP_DP_CURVE25519_ENABLED)
+   #if PSA_CRYPTO_IS_PLAINTEXT_SUPPORT_REQUIRED(PSA_CRYPTO_CFG_ECC_FORMAT)
+    [RM_PSA_CRYPTO_ECP_LOOKUP_INDEX(ECC_25519_PRIVATE_KEY_LENGTH_BITS)][RM_PSA_CRYPTO_ECC_KEY_PLAINTEXT] =
+        HW_SCE_ECC_255GenerateSign,
+    [RM_PSA_CRYPTO_ECP_LOOKUP_INDEX((ECC_25519_PRIVATE_KEY_LENGTH_BITS - 1))][RM_PSA_CRYPTO_ECC_KEY_PLAINTEXT] =
+        HW_SCE_ECC_255GenerateSign,
    #endif
    #if PSA_CRYPTO_IS_WRAPPED_SUPPORT_REQUIRED(PSA_CRYPTO_CFG_ECC_FORMAT)
-    [RM_PSA_CRYPTO_ECP_LOOKUP_INDEX(ECC_521_PRIVATE_KEY_LENGTH_BITS)][RM_PSA_CRYPTO_ECC_KEY_WRAPPED] =
-    	HW_SCE_ECC_521HrkGenerateSign,
+    [RM_PSA_CRYPTO_ECP_LOOKUP_INDEX(ECC_25519_PRIVATE_KEY_LENGTH_BITS)][RM_PSA_CRYPTO_ECC_KEY_WRAPPED] =
+        HW_SCE_ECC_255HrkGenerateSign,
+    [RM_PSA_CRYPTO_ECP_LOOKUP_INDEX((ECC_25519_PRIVATE_KEY_LENGTH_BITS - 1))][RM_PSA_CRYPTO_ECC_KEY_WRAPPED] =
+        HW_SCE_ECC_255HrkGenerateSign,
    #endif
   #endif
 };
@@ -85,11 +105,13 @@ static const hw_sce_ecc_verifysign_t g_ecdsa_verify_sign_lookup[] =
     defined(MBEDTLS_ECP_DP_BP256R1_ENABLED)
     [RM_PSA_CRYPTO_ECP_LOOKUP_INDEX(ECC_256_PRIVATE_KEY_LENGTH_BITS)] = HW_SCE_ECC_256VerifySign,
   #endif
-  #if defined(MBEDTLS_ECP_DP_SECP384R1_ENABLED) || defined(MBEDTLS_ECP_DP_BP384R1_ENABLED)
+  #if !BSP_FEATURE_RSIP_RSIP_E11A_SUPPORTED
+   #if defined(MBEDTLS_ECP_DP_SECP384R1_ENABLED) || defined(MBEDTLS_ECP_DP_BP384R1_ENABLED)
     [RM_PSA_CRYPTO_ECP_LOOKUP_INDEX(ECC_384_PRIVATE_KEY_LENGTH_BITS)] = HW_SCE_ECC_384VerifySign,
-  #endif
-  #if defined(MBEDTLS_ECP_DP_SECP521R1_ENABLED)
+   #endif
+   #if defined(MBEDTLS_ECP_DP_SECP521R1_ENABLED)
     [RM_PSA_CRYPTO_ECP_LOOKUP_INDEX(ECC_521_PRIVATE_KEY_LENGTH_BITS)] = HW_SCE_ECC_521VerifySign,
+   #endif
   #endif
 };
 
@@ -158,22 +180,22 @@ static const mbedtls_mpi_uint secp384r1_a[] =
 };
   #endif
 
-#ifdef MBEDTLS_ECP_DP_SECP521R1_ENABLED
+  #ifdef MBEDTLS_ECP_DP_SECP521R1_ENABLED
 
 /* secp384r1 A value */
 static const mbedtls_mpi_uint secp521r1_a[] =
 {
-  BYTES_TO_T_UINT_8(0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF),
-  BYTES_TO_T_UINT_8(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF),
-  BYTES_TO_T_UINT_8(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF),
-  BYTES_TO_T_UINT_8(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF),
-  BYTES_TO_T_UINT_8(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF),
-  BYTES_TO_T_UINT_8(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF),
-  BYTES_TO_T_UINT_8(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF),
-  BYTES_TO_T_UINT_8(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF),
-  BYTES_TO_T_UINT_8(0xFF, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00),
+    BYTES_TO_T_UINT_8(0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF),
+    BYTES_TO_T_UINT_8(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF),
+    BYTES_TO_T_UINT_8(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF),
+    BYTES_TO_T_UINT_8(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF),
+    BYTES_TO_T_UINT_8(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF),
+    BYTES_TO_T_UINT_8(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF),
+    BYTES_TO_T_UINT_8(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF),
+    BYTES_TO_T_UINT_8(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF),
+    BYTES_TO_T_UINT_8(0xFF, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00),
 };
-#endif
+  #endif
 
 static mbedtls_mpi         local_mpi_a;
 static mbedtls_mpi const * p_mpi_a;
@@ -343,13 +365,19 @@ int ecp_can_do_sce (mbedtls_ecp_group_id gid)
             return 1;
         }
   #endif
-  #if BSP_FEATURE_CRYPTO_HAS_RSIP7
-  #ifdef MBEDTLS_ECP_DP_SECP521R1_ENABLED
-      case MBEDTLS_ECP_DP_SECP521R1:
-      {
-          return 1;
-      }
-  #endif
+  #if BSP_FEATURE_RSIP_RSIP_E51A_SUPPORTED || BSP_FEATURE_RSIP_RSIP_E50D_SUPPORTED
+   #ifdef MBEDTLS_ECP_DP_SECP521R1_ENABLED
+        case MBEDTLS_ECP_DP_SECP521R1:
+        {
+            return 1;
+        }
+   #endif
+   #ifdef MBEDTLS_ECP_DP_CURVE25519_ENABLED
+        case MBEDTLS_ECP_DP_CURVE25519:
+        {
+            return 1;
+        }
+   #endif
   #endif
         default:
 
@@ -376,6 +404,7 @@ int ecp_load_curve_attributes_sce (const mbedtls_ecp_group * grp,
             break;
         }
 
+  #if !BSP_FEATURE_RSIP_RSIP_E11A_SUPPORTED
         case MBEDTLS_ECP_DP_SECP384R1:
         {
             *p_curve_type    = SCE_ECC_CURVE_TYPE_NIST;
@@ -385,7 +414,7 @@ int ecp_load_curve_attributes_sce (const mbedtls_ecp_group * grp,
             break;
         }
 
-#if BSP_FEATURE_CRYPTO_HAS_RSIP7
+   #if BSP_FEATURE_RSIP_RSIP_E51A_SUPPORTED || BSP_FEATURE_RSIP_RSIP_E50D_SUPPORTED
         case MBEDTLS_ECP_DP_SECP521R1:
         {
             *p_curve_type    = SCE_ECC_CURVE_TYPE_NIST;
@@ -394,7 +423,16 @@ int ecp_load_curve_attributes_sce (const mbedtls_ecp_group * grp,
             *pp_domain_param = (uint32_t *) &DomainParam_NIST_P521[0];
             break;
         }
-#endif
+
+        case MBEDTLS_ECP_DP_CURVE25519:
+        {
+            *p_curve_type    = SCE_ECC_CURVE_TYPE_NIST;
+            *p_cmd           = 0x0;
+            priv_key_command = SCE_OEM_CMD_ED25519_PRIVATE;
+            *pp_domain_param = (uint32_t *) &DomainParam_NIST_Ed25519[0];
+            break;
+        }
+   #endif
 
         case MBEDTLS_ECP_DP_SECP256K1:
         {
@@ -422,7 +460,7 @@ int ecp_load_curve_attributes_sce (const mbedtls_ecp_group * grp,
             *pp_domain_param = (uint32_t *) &DomainParam_Brainpool_384r1[0];
             break;
         }
-
+  #endif
         default:
         {
             ret = -1;
@@ -460,9 +498,9 @@ int mbedtls_ecdsa_sign (mbedtls_ecp_group * grp,
     int ret = 0;
     hw_sce_ecc_generatesign_t p_hw_sce_ecc_generatesign = NULL;
 
-    uint32_t  * p_private_key_buff_32;
-    uint32_t  * p_signature_buff_32;
-    uint32_t  * p_common_buff_32;
+    uint32_t * p_private_key_buff_32;
+    uint32_t * p_signature_buff_32;
+    uint32_t * p_common_buff_32;
     uint32_t   private_key_size_words = 0;
     size_t     curve_bytes            = PSA_BITS_TO_BYTES(grp->pbits);
     size_t     temp_curve_bytes       = curve_bytes;
@@ -474,8 +512,17 @@ int mbedtls_ecdsa_sign (mbedtls_ecp_group * grp,
         return MBEDTLS_ERR_ECP_FEATURE_UNAVAILABLE;
     }
 
-    p_hw_sce_ecc_generatesign =
-        g_ecdsa_generate_sign_lookup[RM_PSA_CRYPTO_ECP_LOOKUP_INDEX(grp->pbits)][(bool) grp->vendor_ctx];
+    if (MBEDTLS_ECP_DP_CURVE25519 == grp->id)
+    {
+        p_hw_sce_ecc_generatesign =
+            g_ed_ecdsa_generate_sign_lookup[RM_PSA_CRYPTO_ECP_LOOKUP_INDEX(grp->pbits)][(bool) grp->vendor_ctx];
+    }
+    else
+    {
+        p_hw_sce_ecc_generatesign =
+            g_ecdsa_generate_sign_lookup[RM_PSA_CRYPTO_ECP_LOOKUP_INDEX(grp->pbits)][(bool) grp->vendor_ctx];
+    }
+
     if (NULL == p_hw_sce_ecc_generatesign)
     {
         return MBEDTLS_ERR_PLATFORM_FEATURE_UNSUPPORTED;
@@ -491,7 +538,7 @@ int mbedtls_ecdsa_sign (mbedtls_ecp_group * grp,
      * Private Key (D) of size private_key_size_words
      * Signature (rs) of size curve_bytes * 2
      * Padded/truncated 32-bit aligned copy of input hash of size curve_bytes */
-    p_common_buff_32 = mbedtls_calloc((curve_bytes * 3)  + (private_key_size_words * 4), sizeof(uint8_t));
+    p_common_buff_32 = mbedtls_calloc((curve_bytes * 3) + (private_key_size_words * 4), sizeof(uint8_t));
 
     if (NULL == p_common_buff_32)
     {
@@ -499,7 +546,7 @@ int mbedtls_ecdsa_sign (mbedtls_ecp_group * grp,
     }
 
     p_private_key_buff_32 = p_common_buff_32;
-    p_signature_buff_32   = (uint32_t *)(((uint8_t *)p_private_key_buff_32) + (private_key_size_words * 4U));
+    p_signature_buff_32   = (uint32_t *) (((uint8_t *) p_private_key_buff_32) + (private_key_size_words * 4U));
 
     /* The hash input (buf) should have a length of at least the curve size:
      * nist.fips.186-4: " A hash function that provides a lower security strength than
@@ -513,15 +560,15 @@ int mbedtls_ecdsa_sign (mbedtls_ecp_group * grp,
      * Even if the hash input is the same size as the curve, we will still do a copy because the user input
      * is an 8-bit pointer whereas the SCE HW expects a 32-bit pointer and there could possibly be
      * an alignment issue. */
-    p_buf_8 = (uint8_t *)(((uint8_t *)p_signature_buff_32) + ((curve_bytes) * 2));
+    p_buf_8 = (uint8_t *) (((uint8_t *) p_signature_buff_32) + ((curve_bytes) * 2));
 
-    if((curve_bytes == PSA_BITS_TO_BYTES(ECC_521_PRIVATE_KEY_LENGTH_BITS)) && (ECC_521_PRIVATE_KEY_LENGTH_BITS == grp->pbits))
+    if ((curve_bytes == PSA_BITS_TO_BYTES(ECC_521_PRIVATE_KEY_LENGTH_BITS)) &&
+        (ECC_521_PRIVATE_KEY_LENGTH_BITS == grp->pbits))
     {
-    	temp_curve_bytes = curve_bytes - 2U; /* HW supports 64bytes*/
+        temp_curve_bytes = curve_bytes - 2U; /* HW supports 64bytes*/
     }
 
     uint32_t bytes_to_copy = blen > temp_curve_bytes ? temp_curve_bytes : blen;
-
 
     memcpy(p_buf_8 + (temp_curve_bytes - bytes_to_copy), buf, bytes_to_copy);
 
@@ -538,7 +585,8 @@ int mbedtls_ecdsa_sign (mbedtls_ecp_group * grp,
     }
     else if (FSP_SUCCESS !=
              p_hw_sce_ecc_generatesign(&curve_type, &cmd, p_private_key_buff_32, (uint32_t *) p_buf_8,
-                                      p_signature_buff_32, (uint32_t *) (((uint8_t *)p_signature_buff_32) + curve_bytes)))
+                                       p_signature_buff_32,
+                                       (uint32_t *) (((uint8_t *) p_signature_buff_32) + curve_bytes)))
     {
         ret = MBEDTLS_ERR_ECP_BAD_INPUT_DATA;
     }
@@ -547,7 +595,7 @@ int mbedtls_ecdsa_sign (mbedtls_ecp_group * grp,
     {
         ret = MBEDTLS_ERR_MPI_ALLOC_FAILED;
     }
-    else if (0 != mbedtls_mpi_read_binary(s, ((uint8_t *)p_signature_buff_32) + curve_bytes, curve_bytes))
+    else if (0 != mbedtls_mpi_read_binary(s, ((uint8_t *) p_signature_buff_32) + curve_bytes, curve_bytes))
     {
         ret = MBEDTLS_ERR_MPI_ALLOC_FAILED;
     }
@@ -578,14 +626,14 @@ int mbedtls_ecdsa_verify (mbedtls_ecp_group       * grp,
     (void) blen;
 
     int        ret;
-    uint32_t  * p_public_key_buff_32;
-    uint32_t  * p_signature_buff_32;
-    uint32_t  * p_common_buff_32;
-    uint8_t   * p_buf_8;
+    uint32_t * p_public_key_buff_32;
+    uint32_t * p_signature_buff_32;
+    uint32_t * p_common_buff_32;
+    uint8_t  * p_buf_8;
 
     size_t curve_bytes = PSA_BITS_TO_BYTES(grp->pbits);
 
-    size_t   temp_curve_bytes = curve_bytes;
+    size_t temp_curve_bytes = curve_bytes;
 
   #if defined(MBEDTLS_CHECK_PARAMS)
     if (curve_bytes == 0)
@@ -620,7 +668,7 @@ int mbedtls_ecdsa_verify (mbedtls_ecp_group       * grp,
     }
 
     p_public_key_buff_32 = p_common_buff_32;
-    p_signature_buff_32  = (uint32_t *) (((uint8_t *)p_public_key_buff_32) + (curve_bytes * 2));
+    p_signature_buff_32  = (uint32_t *) (((uint8_t *) p_public_key_buff_32) + (curve_bytes * 2));
 
     /* The hash input (buf) should have a length of at least the curve size:
      * nist.fips.186-4: " A hash function that provides a lower security strength than
@@ -634,11 +682,12 @@ int mbedtls_ecdsa_verify (mbedtls_ecp_group       * grp,
      * Even if the hash input is the same size as the curve, we will still do a copy because the user input
      * is an 8-bit pointer whereas the SCE HW expects a 32-bit pointer and there could possibly be
      * an alignment issue. */
-    p_buf_8 = (uint8_t *)(((uint8_t *)p_signature_buff_32) + (curve_bytes * 2));
+    p_buf_8 = (uint8_t *) (((uint8_t *) p_signature_buff_32) + (curve_bytes * 2));
 
-    if((curve_bytes == PSA_BITS_TO_BYTES(ECC_521_PRIVATE_KEY_LENGTH_BITS)) && (ECC_521_PRIVATE_KEY_LENGTH_BITS == grp->pbits))
+    if ((curve_bytes == PSA_BITS_TO_BYTES(ECC_521_PRIVATE_KEY_LENGTH_BITS)) &&
+        (ECC_521_PRIVATE_KEY_LENGTH_BITS == grp->pbits))
     {
-    	temp_curve_bytes = curve_bytes - 2U; /* HW supports 64bytes*/
+        temp_curve_bytes = curve_bytes - 2U; /* HW supports 64bytes*/
     }
 
     uint32_t bytes_to_copy = blen > temp_curve_bytes ? temp_curve_bytes : blen;
@@ -656,7 +705,7 @@ int mbedtls_ecdsa_verify (mbedtls_ecp_group       * grp,
     {
         ret = MBEDTLS_ERR_MPI_BUFFER_TOO_SMALL;
     }
-    else if (0 != mbedtls_mpi_write_binary(&Q->Y, (((uint8_t *)p_public_key_buff_32) + curve_bytes), curve_bytes))
+    else if (0 != mbedtls_mpi_write_binary(&Q->Y, (((uint8_t *) p_public_key_buff_32) + curve_bytes), curve_bytes))
     {
         ret = MBEDTLS_ERR_MPI_BUFFER_TOO_SMALL;
     }
@@ -664,7 +713,7 @@ int mbedtls_ecdsa_verify (mbedtls_ecp_group       * grp,
     {
         ret = MBEDTLS_ERR_MPI_BUFFER_TOO_SMALL;
     }
-    else if (0 != mbedtls_mpi_write_binary(s, ((uint8_t *)p_signature_buff_32) + curve_bytes, curve_bytes))
+    else if (0 != mbedtls_mpi_write_binary(s, ((uint8_t *) p_signature_buff_32) + curve_bytes, curve_bytes))
     {
         ret = MBEDTLS_ERR_MPI_BUFFER_TOO_SMALL;
     }
@@ -672,7 +721,7 @@ int mbedtls_ecdsa_verify (mbedtls_ecp_group       * grp,
     {
         if (FSP_SUCCESS !=
             p_hw_sce_ecc_verifysign(&curve_type, &cmd, p_public_key_buff_32, (uint32_t *) p_buf_8, p_signature_buff_32,
-                                    (uint32_t *) (((uint8_t *)p_signature_buff_32) + curve_bytes)))
+                                    (uint32_t *) (((uint8_t *) p_signature_buff_32) + curve_bytes)))
         {
             ret = MBEDTLS_ERR_ECP_VERIFY_FAILED;
         }

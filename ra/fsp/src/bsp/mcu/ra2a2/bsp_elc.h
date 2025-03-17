@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2020 - 2024 Renesas Electronics Corporation and/or its affiliates
+* Copyright (c) 2020 - 2025 Renesas Electronics Corporation and/or its affiliates
 *
 * SPDX-License-Identifier: BSD-3-Clause
 */
@@ -59,7 +59,7 @@ typedef enum e_elc_event_ra2a2
     ELC_EVENT_AGTW1_COMPARE_A               = (0x015), // Compare match A
     ELC_EVENT_AGTW1_COMPARE_B               = (0x016), // Compare match B
     ELC_EVENT_IWDT_UNDERFLOW                = (0x017), // IWDT underflow
-    ELC_EVENT_WDT_UNDERFLOW                 = (0x018), // WDT0 underflow
+    ELC_EVENT_WDT_UNDERFLOW                 = (0x018), // WDT underflow
     ELC_EVENT_RTC_ALARM_0                   = (0x019), // Alarm 0 interrupt
     ELC_EVENT_RTC_PERIOD                    = (0x01A), // Periodic interrupt
     ELC_EVENT_RTC_CARRY                     = (0x01B), // Carry interrupt
@@ -164,9 +164,12 @@ typedef enum e_elc_event_ra2a2
     ELC_EVENT_ICU_IRQ11                     = (0x0AD), // External pin interrupt 11
     ELC_EVENT_CGC_SOSC_STOP                 = (0x0AF), // Sub oscillation stop
     ELC_EVENT_CGC_MOSTD_STOP                = (0x0B0), // Main Clock oscillation stop
-    ELC_EVENT_LVD_VBAT                      = (0x0B1), // EXLVDVBAT monitor interrupt
-    ELC_EVENT_LVD_VRTC                      = (0x0B2), // RTC monitor interrupt
-    ELC_EVENT_LVD_EXLVD                     = (0x0B3), // EXLVD monitor interrupt
+    ELC_EVENT_LVD_VBAT                      = (0x0B1), // DEPRECATED, do not use
+    ELC_EVENT_LVD_LVD3                      = (0x0B1), // EXLVDVBAT monitor interrupt
+    ELC_EVENT_LVD_VRTC                      = (0x0B2), // DEPRECATED, do not use
+    ELC_EVENT_LVD_LVD4                      = (0x0B2), // RTC monitor interrupt
+    ELC_EVENT_LVD_EXLVD                     = (0x0B3), // DEPRECATED, do not use
+    ELC_EVENT_LVD_LVD5                      = (0x0B3), // EXLVD monitor interrupt
     ELC_EVENT_RTC_ALARM_1                   = (0x0B4), // Alarm 1 interrupt
     ELC_EVENT_AGT0_INT                      = (0x0B5), // AGT interrupt
     ELC_EVENT_AGT0_COMPARE_A                = (0x0B6), // Compare match A
@@ -369,14 +372,17 @@ typedef enum e_icu_event_ra2a2
     ICU_EVENT_IWDT_UNDERFLOW_FIXED          = (0x00), // IELSR50
     ICU_EVENT_LPM_SNOOZE_REQUEST_GROUP3     = (0x02), // group3 (IELSR[3, 11, 19, 27])
     ICU_EVENT_LPM_SNOOZE_REQUEST_GROUP7     = (0x02), // group7 (IELSR[7, 15, 23, 31])
-    ICU_EVENT_LVD_EXLVD_FIXED               = (0x00), // IELSR48
     ICU_EVENT_LVD_LVD1_GROUP0               = (0x04), // group0 (IELSR[0, 8, 16, 24])
     ICU_EVENT_LVD_LVD1_GROUP4               = (0x04), // group4 (IELSR[4, 12, 20, 28])
     ICU_EVENT_LVD_LVD1_FIXED                = (0x00), // IELSR49
     ICU_EVENT_LVD_LVD2_GROUP1               = (0x02), // group1 (IELSR[1, 9, 17, 25])
     ICU_EVENT_LVD_LVD2_GROUP5               = (0x02), // group5 (IELSR[5, 13, 21, 29])
-    ICU_EVENT_LVD_VBAT_FIXED                = (0x00), // IELSR46
-    ICU_EVENT_LVD_VRTC_FIXED                = (0x00), // IELSR47
+    ICU_EVENT_LVD_VBAT_FIXED                = (0x00), // DEPRECATED, do not use
+    ICU_EVENT_LVD_LVD3_FIXED                = (0x00), // IELSR46
+    ICU_EVENT_LVD_VRTC_FIXED                = (0x00), // DEPRECATED, do not use
+    ICU_EVENT_LVD_LVD4_FIXED                = (0x00), // IELSR47
+    ICU_EVENT_LVD_EXLVD_FIXED               = (0x00), // DEPRECATED, do not use
+    ICU_EVENT_LVD_LVD5_FIXED                = (0x00), // IELSR48
     ICU_EVENT_MACL_OVERFLOW_FIXED           = (0x00), // IELSR61
     ICU_EVENT_POEG0_EVENT_GROUP2            = (0x0B), // group2 (IELSR[2, 10, 18, 26])
     ICU_EVENT_POEG0_EVENT_GROUP6            = (0x0B), // group6 (IELSR[6, 14, 22, 30])

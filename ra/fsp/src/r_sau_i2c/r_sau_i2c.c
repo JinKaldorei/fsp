@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2020 - 2024 Renesas Electronics Corporation and/or its affiliates
+* Copyright (c) 2020 - 2025 Renesas Electronics Corporation and/or its affiliates
 *
 * SPDX-License-Identifier: BSD-3-Clause
 */
@@ -70,16 +70,31 @@
  #define SAU_I2C_PRV_UNIT                                 (0)
  #define SAU_REG                                          (R_SAU0)
  #define SAU_I2C_PRV_SPS_REG_INIT                         (SAU_I2C_PRV_SAU0_SPS_REG_INIT)
-#elif 20 == SAU_I2C_CFG_SINGLE_CHANNEL_ENABLE /* Only IIC20 used (Unit 1 Channel 0) */
- #define SAU_I2C_PRV_CHANNEL                              (0)
- #define SAU_I2C_PRV_UNIT                                 (1)
- #define SAU_REG                                          (R_SAU1)
- #define SAU_I2C_PRV_SPS_REG_INIT                         (SAU_I2C_PRV_SAU1_SPS_REG_INIT)
+#elif 1 == SAU_I2C_CFG_SINGLE_CHANNEL_ENABLE /* Only IIC01 used (Unit 0 Channel 1) */
+ #define SAU_I2C_PRV_CHANNEL                              (1)
+ #define SAU_I2C_PRV_UNIT                                 (0)
+ #define SAU_REG                                          (R_SAU0)
+ #define SAU_I2C_PRV_SPS_REG_INIT                         (SAU_I2C_PRV_SAU0_SPS_REG_INIT)
+#elif 10 == SAU_I2C_CFG_SINGLE_CHANNEL_ENABLE /* Only IIC10 used (Unit 0 Channel 2) */
+ #define SAU_I2C_PRV_CHANNEL                              (2)
+ #define SAU_I2C_PRV_UNIT                                 (0)
+ #define SAU_REG                                          (R_SAU0)
+ #define SAU_I2C_PRV_SPS_REG_INIT                         (SAU_I2C_PRV_SAU0_SPS_REG_INIT)
 #elif 11 == SAU_I2C_CFG_SINGLE_CHANNEL_ENABLE /* Only IIC11 used (Unit 0 Channel 3) */
  #define SAU_I2C_PRV_CHANNEL                              (3)
  #define SAU_I2C_PRV_UNIT                                 (0)
  #define SAU_REG                                          (R_SAU0)
  #define SAU_I2C_PRV_SPS_REG_INIT                         (SAU_I2C_PRV_SAU0_SPS_REG_INIT)
+#elif 20 == SAU_I2C_CFG_SINGLE_CHANNEL_ENABLE /* Only IIC20 used (Unit 1 Channel 0) */
+ #define SAU_I2C_PRV_CHANNEL                              (0)
+ #define SAU_I2C_PRV_UNIT                                 (1)
+ #define SAU_REG                                          (R_SAU1)
+ #define SAU_I2C_PRV_SPS_REG_INIT                         (SAU_I2C_PRV_SAU1_SPS_REG_INIT)
+#elif 21 == SAU_I2C_CFG_SINGLE_CHANNEL_ENABLE /* Only IIC21 used (Unit 1 Channel 1) */
+ #define SAU_I2C_PRV_CHANNEL                              (1)
+ #define SAU_I2C_PRV_UNIT                                 (1)
+ #define SAU_REG                                          (R_SAU1)
+ #define SAU_I2C_PRV_SPS_REG_INIT                         (SAU_I2C_PRV_SAU1_SPS_REG_INIT)
 #endif
 
 #if -1 == SAU_I2C_CFG_SINGLE_CHANNEL_ENABLE /* Multiple IICxx instances used */
@@ -616,7 +631,7 @@ static void r_sau_i2c_open_hw_master (sau_i2c_instance_ctrl_t * const p_ctrl, i2
     sau_i2c_extended_cfg_t const * const   p_extend         = (sau_i2c_extended_cfg_t *) p_cfg->p_extend;
     sau_i2c_clock_settings_t const * const p_clock_settings = &p_extend->clock_settings;
 
-    /* Refer to Table 21.108 "Initial Setting Procedure for Simplified I2C Address Field Transmission" in the RA0E1 manual R01UH1040EJ0100 */
+    /* See in hardware manual: SAU > Table "Initial Setting Procedure for Simplified I2C Address Field Transmission" */
 
     /* Configure the operation clock divisor based on BSP settings */
     p_reg->SPS = SAU_I2C_PRV_SPS_REG_INIT;
@@ -724,9 +739,9 @@ static bool r_sau_i2c_do_tx_rx (sau_i2c_instance_ctrl_t * const p_ctrl, i2c_mast
         {
             SAU_I2C_CRITICAL_SECTION_ENTER();
 
-            /* Refer to Note 1 of Figure 21.51 "Timing of stop condition generation" in the RA0E1 manual
-             * R01UH1040EJ0100 : During a receive  operation, the SOE[n] bit of serial output enable
-             * register m (SOEm) is cleared to 0 before receiving the last data */
+            /* During a receive  operation, the SOE[n] bit of serial output enable register m (SOEm) is cleared to 0
+             * before receiving the last data. Refer to hardware manual: SAU > Operation of Simplified I2C >
+             * Figure "Timing of stop condition generation" */
             p_reg->SOE &= (uint16_t) ~(1 << SAU_I2C_PRV_CHANNEL);
 
             SAU_I2C_CRITICAL_SECTION_EXIT();
@@ -748,7 +763,7 @@ static bool r_sau_i2c_do_tx_rx (sau_i2c_instance_ctrl_t * const p_ctrl, i2c_mast
     if (!transfer_complete)
     {
         /* A dummy byte should be written to SDR to generate SCL during reception.
-         * Refer to Table 21.125 "Procedure for data reception" in the RA0E1 manual R01UH1040EJ0100 */
+         * Refer to hardware manual: SAU > Operation of Simplified I2C > Table "Procedure for data reception" */
         p_reg->SDR_b[SAU_I2C_PRV_CHANNEL].DAT = data;
     }
 
@@ -841,9 +856,8 @@ fsp_err_t R_SAU_I2C_Start (sau_i2c_instance_ctrl_t * const p_ctrl)
 
     SAU_I2C_CRITICAL_SECTION_EXIT();
 
-    /* Set delay time before setting SCL, Refer to Table 21.109
-     * "Procedure for simplified I2C address field transmission" in
-     * the RA0E1 manual R01UH1040EJ0100 */
+    /* Set delay time before setting SCL. Refer to hardware manual: SAU > Operation of Simplified I2C >
+     * Table "Procedure for simplified I2C address field transmission" */
     sau_i2c_extended_cfg_t const * const p_extend = (sau_i2c_extended_cfg_t *) p_ctrl->p_cfg->p_extend;
     R_BSP_SoftwareDelay(p_extend->delay_time, BSP_DELAY_UNITS_MICROSECONDS);
 
@@ -887,7 +901,7 @@ static void r_sau_i2c_hw_stop (sau_i2c_instance_ctrl_t * const p_ctrl)
 
     SAU_I2C_CRITICAL_SECTION_ENTER();
 
-    /* Refer to Table 21.126 "Procedure for stop condition generation" in the RA0E1 manual R01UH1040EJ0100 */
+    /* See in hardware manual:  SAU > Operation of Simplified I2C > Table "Procedure for stop condition generation" */
 
     /* Writing 1 to the STmn bit to stop operation */
     p_reg->ST = (uint16_t) (1 << SAU_I2C_PRV_CHANNEL);
@@ -896,8 +910,9 @@ static void r_sau_i2c_hw_stop (sau_i2c_instance_ctrl_t * const p_ctrl)
     p_reg->SOE &= (uint16_t) ~(1 << SAU_I2C_PRV_CHANNEL);
 
     /* Clear SDA and set SCL */
-    p_reg->SO = (p_reg->SO & (uint16_t) ~(SAU_I2C_SO_SDA_HIGH << SAU_I2C_PRV_CHANNEL)) |
-                (uint16_t) (SAU_I2C_SO_SCL_HIGH << SAU_I2C_PRV_CHANNEL);
+    p_reg->SO &= (uint16_t) ~(SAU_I2C_SO_SDA_HIGH << SAU_I2C_PRV_CHANNEL);
+
+    p_reg->SO |= (uint16_t) (SAU_I2C_SO_SCL_HIGH << SAU_I2C_PRV_CHANNEL);
 
     SAU_I2C_CRITICAL_SECTION_EXIT();
 
@@ -916,8 +931,8 @@ static void r_sau_i2c_hw_stop (sau_i2c_instance_ctrl_t * const p_ctrl)
  **********************************************************************************************************************/
 fsp_err_t R_SAU_I2C_Stop (sau_i2c_instance_ctrl_t * const p_ctrl)
 {
-    /* Set delay time before setting SCL, see Table 21.126
-     * "Procedure for stop condition generation" in the RA0E1 manual R01UH1040EJ0100 */
+    /* Set delay time before setting SCL
+     * See in hardware manual:  SAU > Operation of Simplified I2C > Table "Procedure for stop condition generation" */
     sau_i2c_extended_cfg_t const * const p_extend = (sau_i2c_extended_cfg_t *) p_ctrl->p_cfg->p_extend;
     R_BSP_SoftwareDelay(p_extend->delay_time, BSP_DELAY_UNITS_MICROSECONDS);
 

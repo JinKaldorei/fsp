@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2020 - 2024 Renesas Electronics Corporation and/or its affiliates
+* Copyright (c) 2020 - 2025 Renesas Electronics Corporation and/or its affiliates
 *
 * SPDX-License-Identifier: BSD-3-Clause
 */
@@ -45,7 +45,7 @@ extern "C" {
  #define TX_INCLUDE_USER_DEFINE_FILE
 #endif
 
-#if defined(__ARM_ARCH_8M_MAIN__) || defined(__ARM_ARCH_8_1M_MAIN__) // CM33, CM85
+#if defined(RENESAS_CORTEX_M33) || defined(RENESAS_CORTEX_M85)
  #define TX_PORT_PSPLIM_PRESENT
 #elif (1 == __MPU_PRESENT)
  #define TX_PORT_VENDOR_STACK_MONITOR_ENABLE

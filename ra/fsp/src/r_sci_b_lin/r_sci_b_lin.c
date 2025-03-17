@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2020 - 2024 Renesas Electronics Corporation and/or its affiliates
+* Copyright (c) 2020 - 2025 Renesas Electronics Corporation and/or its affiliates
 *
 * SPDX-License-Identifier: BSD-3-Clause
 */
@@ -134,6 +134,9 @@ const lin_api_t g_lin_on_sci_b =
     .communicationAbort    = R_SCI_B_LIN_CommunicationAbort,
     .callbackSet           = R_SCI_B_LIN_CallbackSet,
     .close                 = R_SCI_B_LIN_Close,
+    .sleepEnter            = R_SCI_B_LIN_SleepEnter,
+    .sleepExit             = R_SCI_B_LIN_SleepExit,
+    .wakeupSend            = R_SCI_B_LIN_WakeupSend,
 };
 
 /***********************************************************************************************************************
@@ -272,10 +275,10 @@ fsp_err_t R_SCI_B_LIN_Open (lin_ctrl_t * const p_api_ctrl, lin_cfg_t const * con
     sci_b_lin_extended_cfg_t const * const p_extend = (sci_b_lin_extended_cfg_t *) p_cfg->p_extend;
 
     /* Check for required IRQs */
-    FSP_ASSERT(p_cfg->rxi_irq >= 0);
-    FSP_ASSERT(p_cfg->txi_irq >= 0);
-    FSP_ASSERT(p_cfg->tei_irq >= 0);
-    FSP_ASSERT(p_cfg->eri_irq >= 0);
+    FSP_ASSERT(p_extend->rxi_irq >= 0);
+    FSP_ASSERT(p_extend->txi_irq >= 0);
+    FSP_ASSERT(p_extend->tei_irq >= 0);
+    FSP_ASSERT(p_extend->eri_irq >= 0);
     FSP_ASSERT(p_extend->bfd_irq >= 0 || (LIN_MODE_MASTER == p_cfg->mode));
  #if SCI_B_LIN_AUTO_SYNC_SUPPORT_ENABLE
 
@@ -379,7 +382,7 @@ fsp_err_t R_SCI_B_LIN_StartFrameWrite (lin_ctrl_t * const p_api_ctrl, uint8_t co
 /*******************************************************************************************************************//**
  * Begins non-blocking transmission of a LIN information frame.
  *
- * On successful information frame reception, the callback is called with event
+ * On successful information frame transmission, the callback is called with event
  * @ref lin_event_t::LIN_EVENT_TX_INFORMATION_FRAME_COMPLETE.
  *
  * Implements @ref lin_api_t::informationFrameWrite.
@@ -776,6 +779,48 @@ fsp_err_t R_SCI_B_LIN_IdFilterGet (lin_ctrl_t * const p_api_ctrl, sci_b_lin_id_f
     p_config->compare_data_select           = (uint8_t) ((xcr0 & R_SCI_B0_XCR0_CF1DS_Msk) >> R_SCI_B0_XCR0_CF1DS_Pos);
 
     return FSP_SUCCESS;
+}
+
+/*******************************************************************************************************************//**
+ * Send wakeup is not supported on the SCI_B LIN driver.
+ *
+ * Implements @ref lin_api_t::wakeupSend.
+ *
+ * @retval FSP_ERR_UNSUPPORTED       Function not supported in this implementation.
+ **********************************************************************************************************************/
+fsp_err_t R_SCI_B_LIN_WakeupSend (lin_ctrl_t * const p_api_ctrl)
+{
+    FSP_PARAMETER_NOT_USED(p_api_ctrl);
+
+    return FSP_ERR_UNSUPPORTED;
+}
+
+/*******************************************************************************************************************//**
+ * Sleep is not supported on the SCI_B LIN driver.
+ *
+ * Implements @ref lin_api_t::sleepEnter.
+ *
+ * @retval FSP_ERR_UNSUPPORTED       Function not supported in this implementation.
+ **********************************************************************************************************************/
+fsp_err_t R_SCI_B_LIN_SleepEnter (lin_ctrl_t * const p_api_ctrl)
+{
+    FSP_PARAMETER_NOT_USED(p_api_ctrl);
+
+    return FSP_ERR_UNSUPPORTED;
+}
+
+/*******************************************************************************************************************//**
+ * Sleep is not supported on the SCI_B LIN driver.
+ *
+ * Implements @ref lin_api_t::sleepExit.
+ *
+ * @retval FSP_ERR_UNSUPPORTED       Function not supported in this implementation.
+ **********************************************************************************************************************/
+fsp_err_t R_SCI_B_LIN_SleepExit (lin_ctrl_t * const p_api_ctrl)
+{
+    FSP_PARAMETER_NOT_USED(p_api_ctrl);
+
+    return FSP_ERR_UNSUPPORTED;
 }
 
 /*******************************************************************************************************************//**
@@ -1340,10 +1385,10 @@ static void r_sci_b_lin_irqs_cfg (sci_b_lin_instance_ctrl_t * const p_ctrl)
     sci_b_lin_extended_cfg_t const * const p_extend = (sci_b_lin_extended_cfg_t *) p_cfg->p_extend;
 
     /* Required */
-    r_sci_b_lin_irq_cfg(p_cfg->rxi_irq);
-    r_sci_b_lin_irq_cfg(p_cfg->txi_irq);
-    r_sci_b_lin_irq_cfg(p_cfg->tei_irq);
-    r_sci_b_lin_irq_cfg(p_cfg->eri_irq);
+    r_sci_b_lin_irq_cfg(p_extend->rxi_irq);
+    r_sci_b_lin_irq_cfg(p_extend->txi_irq);
+    r_sci_b_lin_irq_cfg(p_extend->tei_irq);
+    r_sci_b_lin_irq_cfg(p_extend->eri_irq);
 
     /* Slave mode only */
     r_sci_b_lin_irq_cfg(p_extend->bfd_irq);
@@ -1365,10 +1410,10 @@ static void r_sci_b_lin_irqs_enable_disable (sci_b_lin_instance_ctrl_t * const p
     lin_cfg_t const * p_cfg = p_ctrl->p_cfg;
     sci_b_lin_extended_cfg_t const * const p_extend = (sci_b_lin_extended_cfg_t *) p_cfg->p_extend;
 
-    irqEnableDisableFunc(p_cfg->rxi_irq, p_cfg->rxi_ipl, p_ctrl);
-    irqEnableDisableFunc(p_cfg->txi_irq, p_cfg->txi_ipl, p_ctrl);
-    irqEnableDisableFunc(p_cfg->tei_irq, p_cfg->tei_ipl, p_ctrl);
-    irqEnableDisableFunc(p_cfg->eri_irq, p_cfg->eri_ipl, p_ctrl);
+    irqEnableDisableFunc(p_extend->rxi_irq, p_extend->rxi_ipl, p_ctrl);
+    irqEnableDisableFunc(p_extend->txi_irq, p_extend->txi_ipl, p_ctrl);
+    irqEnableDisableFunc(p_extend->tei_irq, p_extend->tei_ipl, p_ctrl);
+    irqEnableDisableFunc(p_extend->eri_irq, p_extend->eri_ipl, p_ctrl);
     irqEnableDisableFunc(p_extend->bfd_irq, p_extend->bfd_ipl, p_ctrl);
 #if SCI_B_LIN_AUTO_SYNC_SUPPORT_ENABLE
     irqEnableDisableFunc(p_extend->aed_irq, p_extend->aed_ipl, p_ctrl);
@@ -1988,7 +2033,10 @@ void sci_b_lin_tei_isr (void)
 #endif
 
     /* Call user callback */
-    r_sci_b_lin_call_callback(p_ctrl, p_ctrl->event);
+    if (p_ctrl->event)
+    {
+        r_sci_b_lin_call_callback(p_ctrl, p_ctrl->event);
+    }
 
     /* Clear pending IRQ to make sure it doesn't fire again after exiting */
     R_BSP_IrqStatusClear(irq);
@@ -2024,6 +2072,7 @@ void sci_b_lin_eri_isr (void)
     p_ctrl->rx_bytes_received = 0;
     p_ctrl->tx_src_bytes      = 0;
     p_ctrl->p_information     = NULL;
+    p_ctrl->event             = LIN_EVENT_NONE;
 
     /* Clear pending IRQ to make sure it doesn't fire again after exiting */
     R_BSP_IrqStatusClear(irq);

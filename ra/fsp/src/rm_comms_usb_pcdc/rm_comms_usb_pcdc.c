@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2020 - 2024 Renesas Electronics Corporation and/or its affiliates
+* Copyright (c) 2020 - 2025 Renesas Electronics Corporation and/or its affiliates
 *
 * SPDX-License-Identifier: BSD-3-Clause
 */
@@ -15,14 +15,22 @@
  **********************************************************************************************************************/
 
 /* Definitions of Open flag "COUT" */
-#define RM_COMMS_USB_PCDC_OPEN                  (0x434F5554UL)
+#define RM_COMMS_USB_PCDC_OPEN                                        (0x434F5554UL)
 
 /* Number of bytes to transfer on data stage for Line Coding Class request */
-#define RM_COMMS_USB_PCDC_LINE_CODING_LENGTH    (0x07U)
+#define RM_COMMS_USB_PCDC_LINE_CODING_LENGTH                          (0x07U)
+
+/* Connection and Disconnection detection type */
+#define RM_COMMS_USB_PCDC_CONNECT_DETECTION_DISABLED                  (0)
+#define RM_COMMS_USB_PCDC_CONNECT_DETECTION_BAUDRATE_CONFIGURATION    (1)
+#define RM_COMMS_USB_PCDC_CONNECT_DETECTION_CONTROL_LINE_STATE        (2)
+#define RM_COMMS_USB_PCDC_CLEAR_DETECTION_STATUS_VAL                  (0)
 
 /***********************************************************************************************************************
  * Private function prototypes
  **********************************************************************************************************************/
+static rm_comms_event_t rm_comms_usb_pcdc_update_detection_status(rm_comms_usb_pcdc_instance_ctrl_t * const p_ctrl,
+                                                                  uint16_t                                  value);
 
 /***********************************************************************************************************************
  * Global variables
@@ -36,9 +44,6 @@ rm_comms_api_t const g_comms_on_comms_usb_pcdc =
     .callbackSet = RM_COMMS_USB_PCDC_CallbackSet,
     .close       = RM_COMMS_USB_PCDC_Close,
 };
-
-/* Global variable to store Virtual COM port settings */
-usb_pcdc_linecoding_t g_comms_usb_pcdc_line_coding[USB_NUM_USBIP];
 
 /***********************************************************************************************************************
  * Private global variables
@@ -141,10 +146,8 @@ fsp_err_t RM_COMMS_USB_PCDC_Open (rm_comms_ctrl_t * const p_api_ctrl, rm_comms_c
     FSP_ERROR_RETURN(FSP_SUCCESS == err || FSP_ERR_ALREADY_OPEN == err, err);
 
     /* Set callback function for Timer driver */
-    err = p_timer_api->callbackSet(p_extend->p_gpt->p_ctrl,
-                                   rm_comms_usb_pcdc_timer_handler,
-                                   p_usb_instance->p_api,
-                                   NULL);
+    err =
+        p_timer_api->callbackSet(p_extend->p_gpt->p_ctrl, rm_comms_usb_pcdc_timer_handler, p_usb_instance->p_api, NULL);
     FSP_ERROR_RETURN(FSP_SUCCESS == err, err);
 #endif
 
@@ -155,6 +158,7 @@ fsp_err_t RM_COMMS_USB_PCDC_Open (rm_comms_ctrl_t * const p_api_ctrl, rm_comms_c
     FSP_ERROR_RETURN(FSP_SUCCESS == err, err);
 
 #if BSP_CFG_RTOS == 2
+
     /* Set callback function for USB driver */
     err = p_usb_api->callback(rm_comms_usb_pcdc_callback_handler);
     FSP_ERROR_RETURN(FSP_SUCCESS == err, err);
@@ -216,28 +220,28 @@ fsp_err_t RM_COMMS_USB_PCDC_Close (rm_comms_ctrl_t * const p_api_ctrl)
 #if BSP_CFG_RTOS == 2
     if (NULL != p_extend->p_tx_mutex)
     {
-        /* Init mutex for writing */
+        /* Destroy mutex for writing */
         err = rm_comms_recursive_mutex_destroy(p_extend->p_tx_mutex);
         FSP_ERROR_RETURN(FSP_SUCCESS == err, err);
     }
 
     if (NULL != p_extend->p_rx_mutex)
     {
-        /* Init mutex for reading */
+        /* Destroy mutex for reading */
         err = rm_comms_recursive_mutex_destroy(p_extend->p_rx_mutex);
         FSP_ERROR_RETURN(FSP_SUCCESS == err, err);
     }
 
     if (NULL != p_extend->p_tx_semaphore)
     {
-        /* Init semaphore for writing */
+        /* Destroy semaphore for writing */
         err = rm_comms_semaphore_destroy(p_extend->p_tx_semaphore);
         FSP_ERROR_RETURN(FSP_SUCCESS == err, err);
     }
 
     if (NULL != p_extend->p_rx_semaphore)
     {
-        /* Init semaphore for reading */
+        /* Destroy semaphore for reading */
         err = rm_comms_semaphore_destroy(p_extend->p_rx_semaphore);
         FSP_ERROR_RETURN(FSP_SUCCESS == err, err);
     }
@@ -282,6 +286,7 @@ fsp_err_t RM_COMMS_USB_PCDC_CallbackSet (rm_comms_ctrl_t * const p_api_ctrl,
  * @retval FSP_SUCCESS              Successfully data decoded.
  * @retval FSP_ERR_ASSERTION        Null pointer passed as a parameter.
  * @retval FSP_ERR_NOT_OPEN         Module is not open.
+ * @retval FSP_ERR_NOT_ENABLED      USB device needs connecting from USB host to operate.
  *
  * @return See @ref RENESAS_ERROR_CODES or functions called by this function for other possible return codes.
  **********************************************************************************************************************/
@@ -297,7 +302,19 @@ fsp_err_t RM_COMMS_USB_PCDC_Read (rm_comms_ctrl_t * const p_api_ctrl, uint8_t * 
 #endif
 
     rm_comms_usb_pcdc_extended_cfg_t const * p_extend = p_ctrl->p_extend;
-    usb_api_t const * p_usb_api = p_extend->p_usb->p_api;
+    usb_instance_t const * p_usb = p_extend->p_usb;
+
+    if ((p_extend->connect_detection_en == RM_COMMS_USB_PCDC_CONNECT_DETECTION_BAUDRATE_CONFIGURATION) &&
+        (p_ctrl->line_coding.dw_dte_rate == 0))
+    {
+        FSP_RETURN(FSP_ERR_NOT_ENABLED);
+    }
+
+    if ((p_extend->connect_detection_en == RM_COMMS_USB_PCDC_CONNECT_DETECTION_CONTROL_LINE_STATE) &&
+        (p_ctrl->ctrl_line_state.bdtr == 0))
+    {
+        FSP_RETURN(FSP_ERR_NOT_ENABLED);
+    }
 
 #if BSP_CFG_RTOS == 2
     if (NULL != p_extend->p_rx_mutex)
@@ -309,26 +326,28 @@ fsp_err_t RM_COMMS_USB_PCDC_Read (rm_comms_ctrl_t * const p_api_ctrl, uint8_t * 
 #endif
 
     /* Use USB PDCD driver to read data */
-    err = p_usb_api->read(p_extend->p_usb->p_ctrl, p_dest, bytes, USB_CLASS_PCDC);
-    FSP_ERROR_RETURN(FSP_SUCCESS == err, err);
+    err = p_usb->p_api->read(p_usb->p_ctrl, p_dest, bytes, USB_CLASS_PCDC);
 
 #if BSP_CFG_RTOS == 2
-    if (NULL != p_extend->p_rx_semaphore)
+    fsp_err_t sem_err   = FSP_SUCCESS;
+    fsp_err_t mutex_err = FSP_SUCCESS;
+    if ((FSP_SUCCESS == err) && (NULL != p_extend->p_rx_semaphore))
     {
         /* Wait for read to complete */
-        err = rm_comms_semaphore_acquire(p_extend->p_rx_semaphore, p_ctrl->p_cfg->semaphore_timeout);
-        FSP_ERROR_RETURN(FSP_SUCCESS == err, err);
+        sem_err = rm_comms_semaphore_acquire(p_extend->p_rx_semaphore, p_ctrl->p_cfg->semaphore_timeout);
     }
 
     if (NULL != p_extend->p_rx_mutex)
     {
         /* Release read mutex */
-        err = rm_comms_recursive_mutex_release(p_extend->p_rx_mutex);
-        FSP_ERROR_RETURN(FSP_SUCCESS == err, err);
+        mutex_err = rm_comms_recursive_mutex_release(p_extend->p_rx_mutex);
     }
+
+    FSP_ERROR_RETURN(FSP_SUCCESS == sem_err, sem_err);
+    FSP_ERROR_RETURN(FSP_SUCCESS == mutex_err, mutex_err);
 #endif
 
-    return FSP_SUCCESS;
+    return err;
 }
 
 /*******************************************************************************************************************//**
@@ -337,6 +356,7 @@ fsp_err_t RM_COMMS_USB_PCDC_Read (rm_comms_ctrl_t * const p_api_ctrl, uint8_t * 
  * @retval FSP_SUCCESS              Successfully writing data .
  * @retval FSP_ERR_ASSERTION        Null pointer passed as a parameter.
  * @retval FSP_ERR_NOT_OPEN         Module is not open.
+ * @retval FSP_ERR_NOT_ENABLED      USB device needs connecting from USB host to operate.
  *
  * @return See @ref RENESAS_ERROR_CODES or functions called by this function for other possible return codes.
  **********************************************************************************************************************/
@@ -352,7 +372,19 @@ fsp_err_t RM_COMMS_USB_PCDC_Write (rm_comms_ctrl_t * const p_api_ctrl, uint8_t *
 #endif
 
     rm_comms_usb_pcdc_extended_cfg_t const * p_extend = p_ctrl->p_extend;
-    usb_api_t const * p_usb_api = p_extend->p_usb->p_api;
+    usb_instance_t const * p_usb = p_extend->p_usb;
+
+    if ((p_extend->connect_detection_en == RM_COMMS_USB_PCDC_CONNECT_DETECTION_BAUDRATE_CONFIGURATION) &&
+        (p_ctrl->line_coding.dw_dte_rate == 0))
+    {
+        FSP_RETURN(FSP_ERR_NOT_ENABLED);
+    }
+
+    if ((p_extend->connect_detection_en == RM_COMMS_USB_PCDC_CONNECT_DETECTION_CONTROL_LINE_STATE) &&
+        (p_ctrl->ctrl_line_state.bdtr == 0))
+    {
+        FSP_RETURN(FSP_ERR_NOT_ENABLED);
+    }
 
 #if BSP_CFG_RTOS == 2
     if (NULL != p_extend->p_tx_mutex)
@@ -364,26 +396,28 @@ fsp_err_t RM_COMMS_USB_PCDC_Write (rm_comms_ctrl_t * const p_api_ctrl, uint8_t *
 #endif
 
     /* Use USB PDCD driver to write data */
-    err = p_usb_api->write(p_extend->p_usb->p_ctrl, p_src, bytes, USB_CLASS_PCDC);
-    FSP_ERROR_RETURN(FSP_SUCCESS == err, err);
+    err = p_usb->p_api->write(p_usb->p_ctrl, p_src, bytes, USB_CLASS_PCDC);
 
 #if BSP_CFG_RTOS == 2
-    if (NULL != p_extend->p_tx_semaphore)
+    fsp_err_t sem_err   = FSP_SUCCESS;
+    fsp_err_t mutex_err = FSP_SUCCESS;
+    if ((FSP_SUCCESS == err) && (NULL != p_extend->p_tx_semaphore))
     {
         /* Wait for write to complete */
-        err = rm_comms_semaphore_acquire(p_extend->p_tx_semaphore, p_ctrl->p_cfg->semaphore_timeout);
-        FSP_ERROR_RETURN(FSP_SUCCESS == err, err);
+        sem_err = rm_comms_semaphore_acquire(p_extend->p_tx_semaphore, p_ctrl->p_cfg->semaphore_timeout);
     }
 
     if (NULL != p_extend->p_tx_mutex)
     {
         /* Release write mutex */
-        err = rm_comms_recursive_mutex_release(p_extend->p_tx_mutex);
-        FSP_ERROR_RETURN(FSP_SUCCESS == err, err);
+        mutex_err = rm_comms_recursive_mutex_release(p_extend->p_tx_mutex);
     }
+
+    FSP_ERROR_RETURN(FSP_SUCCESS == sem_err, sem_err);
+    FSP_ERROR_RETURN(FSP_SUCCESS == mutex_err, mutex_err);
 #endif
 
-    return FSP_SUCCESS;
+    return err;
 }
 
 /*******************************************************************************************************************//**
@@ -420,6 +454,32 @@ void rm_comms_usb_pcdc_notify_application (rm_comms_usb_pcdc_instance_ctrl_t con
 }
 
 /*******************************************************************************************************************//**
+ * @brief Common function to update dectection status.
+ **********************************************************************************************************************/
+static rm_comms_event_t rm_comms_usb_pcdc_update_detection_status (rm_comms_usb_pcdc_instance_ctrl_t * const p_ctrl,
+                                                                   uint16_t                                  line_state_value)
+{
+    rm_comms_event_t err = RM_COMMS_EVENT_ERROR;
+
+    if (p_ctrl->p_extend->connect_detection_en == RM_COMMS_USB_PCDC_CONNECT_DETECTION_BAUDRATE_CONFIGURATION)
+    {
+        p_ctrl->line_coding.dw_dte_rate = 0;
+    }
+    else if (p_ctrl->p_extend->connect_detection_en == RM_COMMS_USB_PCDC_CONNECT_DETECTION_CONTROL_LINE_STATE)
+    {
+        uint16_t * p_line_state = (uint16_t *) &p_ctrl->ctrl_line_state;
+        *p_line_state = line_state_value;
+
+        err = (p_ctrl->ctrl_line_state.bdtr) ? RM_COMMS_EVENT_TX_OPERATION_COMPLETE : RM_COMMS_EVENT_ERROR;
+    }
+    else
+    {
+    }
+
+    return err;
+}
+
+/*******************************************************************************************************************//**
  * @brief Common callback function called in the USB PCDC driver callback function.
  **********************************************************************************************************************/
 #if BSP_CFG_RTOS == 2
@@ -441,6 +501,12 @@ void rm_comms_usb_pcdc_callback_handler (usb_callback_args_t * p_args)
     switch (p_args->event)
     {
         case USB_STATUS_CONFIGURED:
+        {
+            rm_comms_usb_pcdc_update_detection_status(p_ctrl, RM_COMMS_USB_PCDC_CLEAR_DETECTION_STATUS_VAL);
+
+            break;
+        }
+
         case USB_STATUS_RESUME:
         {
             rm_comms_usb_pcdc_notify_application(p_ctrl, RM_COMMS_EVENT_OPERATION_COMPLETE);
@@ -479,16 +545,22 @@ void rm_comms_usb_pcdc_callback_handler (usb_callback_args_t * p_args)
             if (USB_PCDC_SET_LINE_CODING == (p_args->setup.request_type & USB_BREQUEST))
             {
                 p_usb_instance->p_api->periControlDataGet(p_usb_instance->p_ctrl,
-                                                          (uint8_t *) &g_comms_usb_pcdc_line_coding[p_args->
-                                                                                                    module_number],
+                                                          (uint8_t *) &p_ctrl->line_coding,
                                                           RM_COMMS_USB_PCDC_LINE_CODING_LENGTH);
             }
             else if (USB_PCDC_GET_LINE_CODING == (p_args->setup.request_type & USB_BREQUEST))
             {
                 p_usb_instance->p_api->periControlDataSet(p_usb_instance->p_ctrl,
-                                                          (uint8_t *) &g_comms_usb_pcdc_line_coding[p_args->
-                                                                                                    module_number],
+                                                          (uint8_t *) &p_ctrl->line_coding,
                                                           RM_COMMS_USB_PCDC_LINE_CODING_LENGTH);
+            }
+            else if (USB_PCDC_SET_CONTROL_LINE_STATE == (p_args->setup.request_type & USB_BREQUEST))
+            {
+                rm_comms_event_t err = rm_comms_usb_pcdc_update_detection_status(p_ctrl, p_args->setup.request_value);
+
+                rm_comms_usb_pcdc_notify_application(p_ctrl, err);
+
+                p_usb_instance->p_api->periControlStatusSet(p_usb_instance->p_ctrl, USB_SETUP_STATUS_ACK);
             }
             else
             {
@@ -498,8 +570,26 @@ void rm_comms_usb_pcdc_callback_handler (usb_callback_args_t * p_args)
             break;
         }
 
-        case USB_STATUS_SUSPEND:
         case USB_STATUS_DETACH:
+        {
+#if BSP_CFG_RTOS == 2
+            if (NULL != p_extend->p_tx_semaphore)
+            {
+                rm_comms_semaphore_release(p_extend->p_tx_semaphore);
+            }
+
+            if (NULL != p_extend->p_rx_semaphore)
+            {
+                rm_comms_semaphore_release(p_extend->p_rx_semaphore);
+            }
+#endif
+            rm_comms_usb_pcdc_update_detection_status(p_ctrl, RM_COMMS_USB_PCDC_CLEAR_DETECTION_STATUS_VAL);
+
+            rm_comms_usb_pcdc_notify_application(p_ctrl, RM_COMMS_EVENT_ERROR);
+            break;
+        }
+
+        case USB_STATUS_SUSPEND:
         {
 #if BSP_CFG_RTOS == 2
             if (NULL != p_extend->p_tx_semaphore)
@@ -552,7 +642,7 @@ void rm_comms_usb_pcdc_callback_handler (usb_callback_args_t * p_args)
  **********************************************************************************************************************/
 void rm_comms_usb_pcdc_timer_handler (timer_callback_args_t * p_args)
 {
-    usb_api_t const * p_usb_api = (usb_api_t const *) (p_args->p_context);
+    usb_api_t const   * p_usb_api = (usb_api_t const *) (p_args->p_context);
     usb_instance_ctrl_t ctrl;
 
     p_usb_api->eventGet(&ctrl, &ctrl.event);
@@ -561,4 +651,5 @@ void rm_comms_usb_pcdc_timer_handler (timer_callback_args_t * p_args)
         rm_comms_usb_pcdc_callback_handler(&ctrl);
     }
 }
+
 #endif

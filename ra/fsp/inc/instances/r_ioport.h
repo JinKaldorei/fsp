@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2020 - 2024 Renesas Electronics Corporation and/or its affiliates
+* Copyright (c) 2020 - 2025 Renesas Electronics Corporation and/or its affiliates
 *
 * SPDX-License-Identifier: BSD-3-Clause
 */
@@ -446,6 +446,9 @@ typedef enum e_ioport_peripheral
 
     /** Pin will function as a MIPI DSI peripheral pin */
     IOPORT_PERIPHERAL_MIPI = (0x1FUL << IOPORT_PRV_PFS_PSEL_OFFSET),
+
+    /** Pin will function as an UARTA peripheral pin */
+    IOPORT_PERIPHERAL_UARTA = (0x16UL << IOPORT_PRV_PFS_PSEL_OFFSET),
 } ioport_peripheral_t;
 #endif
 

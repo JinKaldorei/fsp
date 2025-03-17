@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2020 - 2024 Renesas Electronics Corporation and/or its affiliates
+* Copyright (c) 2020 - 2025 Renesas Electronics Corporation and/or its affiliates
 *
 * SPDX-License-Identifier: BSD-3-Clause
 */
@@ -69,6 +69,9 @@
  #if defined(USB_CFG_HUVC_USE)
   #include "r_usb_huvc_cfg.h"
  #endif                                /* defined(USB_CFG_HUVC_USE) */
+ #if defined(USB_CFG_HAUD_USE)
+  #include "r_usb_haud_cfg.h"
+ #endif                                /* defined(USB_CFG_HAUD_USE) */
 
 #endif /* #if (BSP_CFG_RTOS != 1) */
 
@@ -144,7 +147,19 @@ static const uint8_t g_usb_pipe_host[] =
     USB_NULL,              USB_NULL,
     USB_NULL,              USB_NULL,
     USB_NULL,              USB_NULL,
- #endif                                /* defined(USB_CFG_HPRN_USE) */
+ #endif                                          /* defined(USB_CFG_HPRN_USE) */
+
+ #if defined(USB_CFG_HAUD_USE)
+    USB_CFG_HAUD_ISO_IN,   USB_CFG_HAUD_ISO_OUT, /* HAUD: Address 1 */
+    USB_NULL,              USB_NULL,
+    USB_NULL,              USB_NULL,
+    USB_NULL,              USB_NULL,
+ #else                                           /* defined(USB_CFG_HAUD_USE) */
+    USB_NULL,              USB_NULL,
+    USB_NULL,              USB_NULL,
+    USB_NULL,              USB_NULL,
+    USB_NULL,              USB_NULL,
+ #endif                                /* defined(USB_CFG_HAUD_USE) */
 };
 #endif  /* (USB_CFG_MODE & USB_CFG_HOST) == USB_CFG_HOST */
 
@@ -338,6 +353,13 @@ uint8_t g_usb_pcdc_serialstate_table[USB_PCDC_SETUP_TBL_BSIZE] =
 
 usb_pipe_table_t g_usb_pipe_table[USB_NUM_USBIP][USB_MAXPIPE_NUM + 1];
 uint16_t         g_usb_cstd_bemp_skip[USB_NUM_USBIP][USB_MAX_PIPE_NO + 1U];
+
+#if USB_DEBUG_ON == 2
+
+/* Debug Print Buffer */
+uint8_t g_usb_print_buffer[USB_PRINT_BUF_SIZE];
+uint8_t g_usb_qe_error_string_length;
+#endif                                 /* USB_DEBUG_ON == 2 */
 
 /******************************************************************************
  * Renesas Abstracted common data I/O functions
@@ -593,7 +615,7 @@ usb_er_t usb_data_read (usb_instance_ctrl_t * p_ctrl, uint8_t * buf, uint32_t si
         p_tran_data->segment   = USB_TRAN_END;
         p_tran_data->ip        = p_ctrl->module_number;
         p_tran_data->ipp       = usb_hstd_get_usb_ip_adr(p_ctrl->module_number);
- #if (USB_CFG_DMA == USB_CFG_ENABLE)
+ #if (USB_CFG_DMA == USB_CFG_ENABLE || USB_CFG_DTC == USB_CFG_ENABLE)
         if (0 != p_ctrl->p_transfer_tx)
         {
             p_tran_data->p_transfer_tx = p_ctrl->p_transfer_tx;
@@ -631,7 +653,7 @@ usb_er_t usb_data_read (usb_instance_ctrl_t * p_ctrl, uint8_t * buf, uint32_t si
         p_tran_data->p_tranadr = buf;                                         /* Data address */
         p_tran_data->tranlen   = size;                                        /* Data Size */
         p_tran_data->complete  = (usb_cb_t) g_usb_callback[p_ctrl->type * 2]; /* Callback function */
- #if (USB_CFG_DMA == USB_CFG_ENABLE)
+ #if (USB_CFG_DMA == USB_CFG_ENABLE || USB_CFG_DTC == USB_CFG_ENABLE)
         if (0 != p_ctrl->p_transfer_tx)
         {
             p_tran_data->p_transfer_tx = p_ctrl->p_transfer_tx;
@@ -692,7 +714,7 @@ usb_er_t usb_data_write (usb_instance_ctrl_t * p_ctrl, uint8_t const * const buf
         p_tran_data->segment   = USB_TRAN_END;
         p_tran_data->ip        = p_ctrl->module_number;
         p_tran_data->ipp       = usb_hstd_get_usb_ip_adr(p_ctrl->module_number);
- #if (USB_CFG_DMA == USB_CFG_ENABLE)
+ #if (USB_CFG_DMA == USB_CFG_ENABLE || USB_CFG_DTC == USB_CFG_ENABLE)
         if (0 != p_ctrl->p_transfer_tx)
         {
             p_tran_data->p_transfer_tx = p_ctrl->p_transfer_tx;
@@ -743,7 +765,7 @@ usb_er_t usb_data_write (usb_instance_ctrl_t * p_ctrl, uint8_t const * const buf
         p_tran_data->ip       = p_ctrl->module_number;                             /* USB Module Number */
         p_tran_data->keyword  = pipe;                                              /* Pipe No */
         p_tran_data->complete = (usb_cb_t) g_usb_callback[(p_ctrl->type * 2) + 1]; /* Callback function */
- #if (USB_CFG_DMA == USB_CFG_ENABLE)
+ #if (USB_CFG_DMA == USB_CFG_ENABLE || USB_CFG_DTC == USB_CFG_ENABLE)
         if (0 != p_ctrl->p_transfer_tx)
         {
             p_tran_data->p_transfer_tx = p_ctrl->p_transfer_tx;
@@ -788,6 +810,8 @@ usb_er_t usb_data_stop (usb_instance_ctrl_t * p_ctrl, usb_transfer_t type)
 
     if (USB_NULL == pipe)
     {
+        USB_PRINTF1("*** usb_data_stop PipeNo ERROR %d\n", pipe);
+
         return USB_ERROR;
     }
 

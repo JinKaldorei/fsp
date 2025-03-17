@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2020 - 2024 Renesas Electronics Corporation and/or its affiliates
+* Copyright (c) 2020 - 2025 Renesas Electronics Corporation and/or its affiliates
 *
 * SPDX-License-Identifier: BSD-3-Clause
 */
@@ -190,19 +190,6 @@ FSP_HEADER
  * Typedef definitions
  **********************************************************************************************************************/
 
-/** Data lifecycle */
-typedef enum
-{
-    SCE_CM = 1,
-    SCE_SSD,
-    SCE_NSECSD,
-    SCE_DPL,
-    SCE_LCK_DBG,
-    SCE_LCK_BOOT,
-    SCE_RMA_REQ,
-    SCE_RMA_ACK,
-} lifecycle_t;
-
 /** Byte data structure */
 typedef struct sce_byte_data
 {
@@ -232,7 +219,7 @@ typedef struct sce_hmac_sha_wrapped_key
     uint32_t type;                                   ///< key type
 
     /* HMAC-SHA256 is supported */
-    uint32_t value[SCE_TLS_HMAC_KEY_INDEX_WORD_SIZE]; ///< wrapped key value   
+    uint32_t value[SCE_TLS_HMAC_KEY_INDEX_WORD_SIZE]; ///< wrapped key value
 } sce_hmac_sha_wrapped_key_t;
 
 /** RSA 1024bit public wrapped key data structure. DO NOT MODIFY. */
@@ -344,7 +331,7 @@ typedef struct sce_ecc_public_wrapped_key
 typedef struct sce_ecc_private_wrapped_key
 {
     uint32_t type;                                                    ///< key type
-    uint32_t value[HW_SCE_ECC_PRIVATE_KEY_MANAGEMENT_INFO_WORD_SIZE]; ///< wrapped key value   
+    uint32_t value[HW_SCE_ECC_PRIVATE_KEY_MANAGEMENT_INFO_WORD_SIZE]; ///< wrapped key value
 } sce_ecc_private_wrapped_key_t;
 
 /** ECC P-192/224/256 wrapped key pair structure */
@@ -358,7 +345,7 @@ typedef struct sce_ecc_wrapped_pair_key
 typedef struct sce_ecdh_wrapped_key
 {
     uint32_t type;                                            ///< key type
-    uint32_t value[HW_SCE_SHARED_SECRET_KEY_INDEX_WORD_SIZE]; ///< wrapped key value   
+    uint32_t value[HW_SCE_SHARED_SECRET_KEY_INDEX_WORD_SIZE]; ///< wrapped key value
 } sce_ecdh_wrapped_key_t;
 
 /* TLS CA certification public key index data structure */
@@ -479,7 +466,7 @@ typedef void sce_ctrl_t;
 /** User configuration structure, used in open function */
 typedef struct st_sce_cfg
 {
-    lifecycle_t lifecycle;             ///< Data lifecycle
+    /* No structure members */
 } sce_cfg_t;
 
 /** Functions implemented at the HAL layer will follow this API. */
@@ -1958,7 +1945,7 @@ typedef struct st_sce_api
      * @param[in] initial_vector             the initial_vector for user key CBC encrypt
      * @param[in] encrypted_key              the user key encrypted with AES128-ECB mode
      * @param[out] wrapped_key            the user Key Generation Information (141 words) of RSA2048 bit
-     * 
+     *
      * @retval FSP_SUCCESS                          Normal termination
      * @retval FSP_ERR_CRYPTO_SCE_RESOURCE_CONFLICT A resource conflict occurred because a hardware resource needed
      *                                              by the processing routine was in use by another processing routine.

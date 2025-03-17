@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2020 - 2024 Renesas Electronics Corporation and/or its affiliates
+* Copyright (c) 2020 - 2025 Renesas Electronics Corporation and/or its affiliates
 *
 * SPDX-License-Identifier: BSD-3-Clause
 */
@@ -260,14 +260,14 @@ fsp_err_t R_ADC_D_CallbackSet (adc_ctrl_t * const          p_api_ctrl,
 }
 
 /*******************************************************************************************************************//**
- * Starts a software scan or enables the hardware trigger no-wait mode for a scan depending on how the triggers were
+ * Starts a software trigger scan or enables the hardware trigger mode for a scan depending on how the triggers were
  * configured in the R_ADC_D_Open call. If the unit was configured for ELC or interrupt hardware triggering, then
  * this function allows the trigger signal to get to the ADC_D. The function is not able to control the generation
  * of the trigger itself.
- * If the ADC_D was configured for software triggering, then this function starts the software triggered scan.
  *
  * @pre Call R_ADC_D_ScanCfg after R_ADC_D_Open before starting a scan.
- * @retval FSP_SUCCESS                 Scan started (software trigger) or hardware triggers no-wait mode enabled.
+ *
+ * @retval FSP_SUCCESS                 Scan started (software trigger) or hardware trigger mode enabled.
  * @retval FSP_ERR_ASSERTION           An input argument is invalid.
  * @retval FSP_ERR_NOT_OPEN            ADC_D is not open.
  * @retval FSP_ERR_NOT_INITIALIZED     ADC_D is not initialized.
@@ -288,24 +288,27 @@ fsp_err_t R_ADC_D_ScanStart (adc_ctrl_t * p_ctrl)
     adc_d_extended_cfg_t * p_extend = (adc_d_extended_cfg_t *) p_instance_ctrl->p_cfg->p_extend;
 
     uint8_t adm0_mask = R_ADC_D_ADM0_ADCE_Msk;
-    if ((ADC_D_TRIGGER_MODE_WAIT == p_extend->operation_trigger) &&
-        (ADC_D_TRIGGER_SOURCE_SOFTWARE == p_extend->trigger_source))
+    if (ADC_D_TRIGGER_MODE_NO_WAIT == p_extend->operation_trigger)
     {
-        /* Software mode does not set ADCE */
-        adm0_mask = R_ADC_D_ADM0_ADCS_Msk;
-    }
-    else
-    {
-        /* Setting bit ADCE: Software/Hardware no-wait */
+        /* Software/Hardware no-wait mode sets ADCE then ADCS. */
         R_ADC_D->ADM0 |= adm0_mask;
 
-        /* In software/Hardware no-wait. it takes 1 us + 2 cycles of the conversion clock (fAD)
+        /* In Software/Hardware no-wait mode, it takes 1 us + 2 cycles of the conversion clock (fAD)
          * from the start of operation for the operation to stabilize. */
         uint32_t freq_adc       = r_adc_d_get_adc_frequency(p_extend->conversion_clockdiv);
         uint32_t delay_us_cycle = (uint32_t) (ADC_D_CONVERT_TO_MICRO_SECOND / freq_adc);
         R_BSP_SoftwareDelay((2 * delay_us_cycle) + 1, BSP_DELAY_UNITS_MICROSECONDS);
 
         adm0_mask |= R_ADC_D_ADM0_ADCS_Msk;
+    }
+    else if (ADC_D_TRIGGER_SOURCE_SOFTWARE == p_extend->trigger_source)
+    {
+        /* Software wait mode does not set ADCE, only set ADCS */
+        adm0_mask = R_ADC_D_ADM0_ADCS_Msk;
+    }
+    else
+    {
+        /* Hardware wait mode does not set ADCS, only set ADCE */
     }
 
     R_ADC_D->ADM0 |= adm0_mask;
@@ -605,6 +608,92 @@ fsp_err_t R_ADC_D_OffsetSet (adc_ctrl_t * const p_ctrl, adc_channel_t const reg_
 }
 
 /*******************************************************************************************************************//**
+ * Prepare ADC_D to enter snooze mode via a hardware trigger.
+ * This function must be called immediately before entering software standby mode in order to allow the configured
+ * hardware trigger to transition the MCU from software standby mode to snooze mode and perform an ADC conversion.
+ *
+ * Supported modes for requesting snooze mode via hardware trigger:
+ * - channel_mode = ADC_D_CHANNEL_MODE_SELECT, conversion_operation = ADC_D_CONVERSION_MODE_ONESHOT
+ * - channel_mode = ADC_D_CHANNEL_MODE_SCAN,   conversion_operation = ADC_D_CONVERSION_MODE_ONESHOT
+ *
+ * @param[in] p_ctrl              Pointer to the ADC control block
+ *
+ * @pre The R_ADC_D_ScanStart must be called in advance.
+ *
+ * @retval FSP_SUCCESS            ADC is configured to request Snooze mode.
+ * @retval FSP_ERR_ASSERTION      An input argument is invalid.
+ * @retval FSP_ERR_NOT_OPEN       ADC_D is not open.
+ * @retval FSP_ERR_INVALID_MODE   ADC is in an invalid mode for requesting Snooze mode.
+ **********************************************************************************************************************/
+fsp_err_t R_ADC_D_SnoozeModePrepare (adc_ctrl_t * const p_ctrl)
+{
+#if ADC_D_CFG_SNOOZE_SUPPORT_ENABLE
+ #if ADC_D_CFG_PARAM_CHECKING_ENABLE
+    adc_d_instance_ctrl_t * p_instance_ctrl = (adc_d_instance_ctrl_t *) p_ctrl;
+
+    FSP_ASSERT(NULL != p_instance_ctrl);
+    FSP_ERROR_RETURN(ADC_D_OPEN == p_instance_ctrl->opened, FSP_ERR_NOT_OPEN);
+
+    /* Verify that the ADC instance is in the correct mode for requesting snooze mode via hardware trigger. */
+    adc_d_extended_cfg_t const * p_extend = (adc_d_extended_cfg_t const *) p_instance_ctrl->p_cfg->p_extend;
+    FSP_ERROR_RETURN(ADC_D_TRIGGER_SOURCE_SOFTWARE != p_extend->trigger_source, FSP_ERR_INVALID_MODE);
+    FSP_ERROR_RETURN(ADC_D_CONVERSION_MODE_ONESHOT == p_extend->conversion_operation, FSP_ERR_INVALID_MODE);
+    FSP_ERROR_RETURN(ADC_D_TRIGGER_MODE_WAIT == p_extend->operation_trigger, FSP_ERR_INVALID_MODE);
+
+    /* The peripheral clock source must be set to HOCO or MOCO. */
+    FSP_ERROR_RETURN(0 == R_SYSTEM->ICLKSCR_b.CKST, FSP_ERR_INVALID_MODE);
+    FSP_ERROR_RETURN(0 == R_SYSTEM->FMAINSCR_b.CKST, FSP_ERR_INVALID_MODE);
+ #else
+    FSP_PARAMETER_NOT_USED(p_ctrl);
+ #endif
+
+    /* Set AWC prior to entering software standby mode.
+     * See in hardware manual: ADC12 > Snooze Mode Function > A/D Conversion by Inputting a Hardware Trigger */
+    R_ADC_D->ADM2_b.AWC = 1;
+
+    return FSP_SUCCESS;
+#else
+    FSP_PARAMETER_NOT_USED(p_ctrl);
+
+    return FSP_ERR_UNSUPPORTED;
+#endif
+}
+
+/*******************************************************************************************************************//**
+ * After exiting snooze mode, if the ADC_D module was in snooze mode, then this function must be called in order to
+ * restore ADC operation to normal mode.
+ *
+ * @param[in] p_ctrl              Pointer to the ADC control block
+ *
+ * @retval FSP_SUCCESS            ADC is configured to request Snooze mode.
+ * @retval FSP_ERR_INVALID_MODE   ADC is in an invalid mode for requesting Snooze mode.
+ **********************************************************************************************************************/
+fsp_err_t R_ADC_D_SnoozeModeExit (adc_ctrl_t * const p_ctrl)
+{
+#if ADC_D_CFG_SNOOZE_SUPPORT_ENABLE
+ #if ADC_D_CFG_PARAM_CHECKING_ENABLE
+    adc_d_instance_ctrl_t * p_instance_ctrl = (adc_d_instance_ctrl_t *) p_ctrl;
+
+    FSP_ASSERT(NULL != p_instance_ctrl);
+    FSP_ERROR_RETURN(ADC_D_OPEN == p_instance_ctrl->opened, FSP_ERR_NOT_OPEN);
+    FSP_ERROR_RETURN(1 == R_ADC_D->ADM2_b.AWC, FSP_ERR_INVALID_MODE);
+ #else
+    FSP_PARAMETER_NOT_USED(p_ctrl);
+ #endif
+
+    /* Clear AWC after exiting software standby mode.
+     * See in hardware manual: ADC12 > Snooze Mode Function > A/D Conversion by Inputting a Hardware Trigger */
+    R_ADC_D->ADM2_b.AWC = 0;
+
+    return FSP_SUCCESS;
+#else
+    FSP_PARAMETER_NOT_USED(p_ctrl);
+
+    return FSP_ERR_UNSUPPORTED;
+#endif
+}
+
+/*******************************************************************************************************************//**
  * @} (end addtogroup ADC_D)
  **********************************************************************************************************************/
 
@@ -669,9 +758,8 @@ static fsp_err_t r_adc_d_scan_cfg_check (adc_d_instance_ctrl_t * const     p_ctr
         /* The internal reference voltage cannot be used for the positive side reference voltage. */
         FSP_ERROR_RETURN(ADC_D_POSITIVE_VREF_IVREF > p_extend->positive_vref, FSP_ERR_INVALID_HW_CONDITION);
 
-        /* The hardware trigger wait mode and one-shot conversion mode cannot be used at the same time.*/
+        /* The hardware/software trigger wait mode and one-shot conversion mode cannot be used at the same time. */
         FSP_ERROR_RETURN((ADC_D_CONVERSION_MODE_SEQUENTIAL == p_extend->conversion_operation) ||
-                         (ADC_D_TRIGGER_SOURCE_SOFTWARE == p_extend->trigger_source) ||
                          (ADC_D_TRIGGER_MODE_NO_WAIT == p_extend->operation_trigger),
                          FSP_ERR_INVALID_HW_CONDITION);
     }
@@ -793,8 +881,8 @@ static void r_adc_d_open_sub (adc_d_instance_ctrl_t * const p_ctrl)
 #if ADC_D_CFG_INTERNAL_REF_VOLT_ENABLE
     R_ADC_D->ADM2 = adcadm2;
 
-    /* Setting reference voltage source
-     * See Table 25.15 "Register settings for ADREFP[1:0] rewrite" in RA0E1 User's Manual (R01UH1040EJ0100) */
+    /* Setting reference voltage source. See in hardware manual: ADC12 > Registers to Control the A/D Converter >
+     * Table "Register settings for ADREFP[1:0] rewrite" */
     if (ADC_D_POSITIVE_VREF_IVREF == p_extend->positive_vref)
     {
         /* Discharge */

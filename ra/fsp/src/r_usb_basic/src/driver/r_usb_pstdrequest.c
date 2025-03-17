@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2020 - 2024 Renesas Electronics Corporation and/or its affiliates
+* Copyright (c) 2020 - 2025 Renesas Electronics Corporation and/or its affiliates
 *
 * SPDX-License-Identifier: BSD-3-Clause
 */
@@ -1468,6 +1468,11 @@ static void usb_pstd_set_configuration3 (usb_utr_t * p_utr)
 
         if (USB_ERROR == cfgok)
         {
+            USB_PRINTF3("### usb_pstd_set_configuration3 NG value:%d index:%d length:%d \n",
+                        g_usb_pstd_req_value,
+                        g_usb_pstd_req_index,
+                        g_usb_pstd_req_length);
+
             /* Request error */
             usb_pstd_set_stall_pipe0(p_utr);
         }
@@ -1642,28 +1647,31 @@ static void usb_peri_class_request_usbx (usb_setup_t * p_req)
         for (class_index = 0; class_index < UX_MAX_SLAVE_INTERFACES; class_index++)
         {
   #if defined(USB_CFG_PAUD_USE)
-        	/* Check the received audio class request is for the interface
-        	 * (i.e. recipient is interface) or endpoint(i.e. recipient is endpoint). */
+
+            /* Check the received audio class request is for the interface
+             * (i.e. recipient is interface) or endpoint(i.e. recipient is endpoint). */
             if ((USB_INTERFACE == (p_req->request_type & USB_BMREQUESTTYPERECIP)) ||
                 (USB_ENDPOINT == (p_req->request_type & USB_BMREQUESTTYPERECIP)))
-  #else  /* defined(USB_CFG_PAUD_USE) */
+  #else                                /* defined(USB_CFG_PAUD_USE) */
             if (USB_INTERFACE == (p_req->request_type & USB_BMREQUESTTYPERECIP))
   #endif
             {
   #if defined(USB_CFG_PAUD_USE)
-              /* Verify the interface value(i.e. request index value),
-               * only when received audio class request is for the interface
-               * (i.e. recipient is interface). */
-             if (USB_INTERFACE == (p_req->request_type & USB_BMREQUESTTYPERECIP))
-             {
-  #endif  /* defined(USB_CFG_PAUD_USE) */
-            	if ((p_req->request_index & VALUE_FFH) != class_index)
+
+                /* Verify the interface value(i.e. request index value),
+                 * only when received audio class request is for the interface
+                 * (i.e. recipient is interface). */
+                if (USB_INTERFACE == (p_req->request_type & USB_BMREQUESTTYPERECIP))
+                {
+  #endif                               /* defined(USB_CFG_PAUD_USE) */
+                if ((p_req->request_index & VALUE_FFH) != class_index)
                 {
                     continue;
                 }
+
   #if defined(USB_CFG_PAUD_USE)
-             }
-  #endif  /* defined(USB_CFG_PAUD_USE) */
+            }
+  #endif                               /* defined(USB_CFG_PAUD_USE) */
                 class = _ux_system_slave->ux_system_slave_interface_class_array[class_index];
                 if (UX_NULL == class)
                 {
@@ -1679,6 +1687,8 @@ static void usb_peri_class_request_usbx (usb_setup_t * p_req)
                                FSP_SETUP_VALUE) = p_req->request_value;
                 *(uint16_t *) (transfer_request->ux_slave_transfer_request_setup +
                                FSP_SETUP_LENGTH) = p_req->request_length;
+                transfer_request->ux_slave_transfer_request_actual_length = p_req->request_length -
+                                                                            g_usb_pstd_data_cnt[USB_PIPE0];
   #if defined(USB_CFG_PAUD_USE) || defined(USB_CFG_DFU_USE)
                 *(transfer_request->ux_slave_transfer_request_setup +
                   FSP_SETUP_REQUEST_TYPE) = (uint8_t) (p_req->request_type & VALUE_FFH);
@@ -1707,9 +1717,9 @@ static void usb_peri_class_request_usbx (usb_setup_t * p_req)
 static void usb_peri_class_reqeust_usbx_get_data (usb_setup_t * p_req, usb_utr_t * p_utr)
 {
     FSP_PARAMETER_NOT_USED(p_req);
-    UX_SLAVE_DEVICE   * device;
+    UX_SLAVE_DEVICE * device;
     UX_SLAVE_TRANSFER * transfer_request;
-    usb_utr_t           tran_data;
+    usb_utr_t tran_data;
 
     tran_data.ip     = p_utr->ip;
     device           = &_ux_system_slave->ux_system_slave_device;
@@ -1915,8 +1925,12 @@ void usb_peri_class_request_wnss (usb_setup_t * req, usb_utr_t * p_utr)
     /* Is a request receive target Interface? */
     if (USB_INTERFACE == (req->request_type & USB_BMREQUESTTYPERECIP))
     {
+  #if (BSP_CFG_RTOS == 1)
         if ((USB_MASS_STORAGE_RESET == (req->request_type & USB_BREQUEST)) ||
             (USB_PCDC_SET_CONTROL_LINE_STATE == (req->request_type & USB_BREQUEST)))
+  #else
+        if (USB_MASS_STORAGE_RESET == (req->request_type & USB_BREQUEST))
+  #endif                                /* (BSP_CFG_RTOS == 1) */
         {
   #if (BSP_CFG_RTOS == 1)
             usb_cstd_set_buf(p_utr, (uint16_t) USB_PIPE0);
@@ -1942,7 +1956,12 @@ void usb_peri_class_request_wnss (usb_setup_t * req, usb_utr_t * p_utr)
         usb_pstd_set_stall_pipe0(p_utr); /* Req Error */
     }
 
+  #if (BSP_CFG_RTOS == 1)
+    if ((USB_MASS_STORAGE_RESET != (req->request_type & USB_BREQUEST)) &&
+        (USB_PCDC_SET_CONTROL_LINE_STATE != (req->request_type & USB_BREQUEST)))
+  #else
     if (USB_MASS_STORAGE_RESET != (req->request_type & USB_BREQUEST))
+  #endif                                /* (BSP_CFG_RTOS == 1) */
     {
         usb_pstd_ctrl_end((uint16_t) USB_CTRL_END, p_utr); /* End control transfer. */
     }

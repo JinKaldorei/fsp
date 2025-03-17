@@ -1,6 +1,7 @@
 /*
  * FreeRTOS+TCP V2.2.1
  * Copyright (C) 2017 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * Copyright (C) 2025 Modified by Renesas Electronics Corporation and/or its affiliates
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -38,7 +39,7 @@
 #include "NetworkBufferManagement.h"
 
 /* Renesas includes. */
-#include "r_ether.h"
+#include "r_ether_api.h"
 
 /***********************************************************************************************************************
  * Macro definitions
@@ -235,7 +236,7 @@ void vEtherISRCallback (ether_callback_args_t * p_args) {
 
     /* If EDMAC FR (Frame Receive Event) or FDE (Receive Descriptor Empty Event)
      * interrupt occurs, wake up xRxHanderTask. */
-    if (p_args->status_eesr & ETHER_EDMAC_INTERRUPT_FACTOR_RECEPTION)
+    if (p_args->event & ETHER_EVENT_RX_COMPLETE || p_args->event & ETHER_EVENT_RX_MESSAGE_LOST)
     {
         if (xRxHanderTaskHandle != NULL)
         {

@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2020 - 2024 Renesas Electronics Corporation and/or its affiliates
+* Copyright (c) 2020 - 2025 Renesas Electronics Corporation and/or its affiliates
 *
 * SPDX-License-Identifier: BSD-3-Clause
 */
@@ -24,22 +24,30 @@
 #define SAU1_SPS_REG_INIT          ((BSP_CFG_SAU_CK11_DIV << R_SAU0_SPS_PRS1_Pos) | BSP_CFG_SAU_CK10_DIV)
 
 #if SAU_UART_CFG_SINGLE_CHANNEL > 2
+ #define SAU_DEFINE_LOCALS(p_ctrl)     /* Not used. All compile time macros instead. */
  #define SAU_REG                   (R_SAU1)
  #define SAU_UNIT                  (1)
  #define SAU_TX_INDEX              ((SAU_UART_CFG_SINGLE_CHANNEL - 3) << 1)
  #define SAU_RX_INDEX              (SAU_TX_INDEX + 1)
  #define SAU_SPS_REG_INIT          (SAU1_SPS_REG_INIT)
 #elif SAU_UART_CFG_SINGLE_CHANNEL > 0
+ #define SAU_DEFINE_LOCALS(p_ctrl)     /* Not used. All compile time macros instead. */
  #define SAU_REG                   (R_SAU0)
  #define SAU_UNIT                  (0)
  #define SAU_TX_INDEX              ((SAU_UART_CFG_SINGLE_CHANNEL - 1) << 1)
  #define SAU_RX_INDEX              (SAU_TX_INDEX + 1)
  #define SAU_SPS_REG_INIT          (SAU0_SPS_REG_INIT)
 #else
- #define SAU_REG                   (p_ctrl->p_reg)
- #define SAU_UNIT                  (p_ctrl->sau_unit)
- #define SAU_TX_INDEX              (p_ctrl->sau_tx_channel)
- #define SAU_RX_INDEX              (p_ctrl->sau_tx_channel + 1)
+ #define SAU_DEFINE_LOCALS(p_ctrl)    R_SAU0_Type * const _p_reg = (p_ctrl)->p_reg;     \
+    const uint8_t _sau_unit     = (p_ctrl)->sau_unit;                                   \
+    const uint8_t _sau_tx_index = (p_ctrl)->sau_tx_channel;                             \
+    const uint8_t _sau_rx_index = (p_ctrl)->sau_tx_channel + 1;                         \
+    /* These locals will not always be used. Void cast to quiet unused variable warn */ \
+    (void) _p_reg; (void) _sau_unit; (void) _sau_tx_index; (void) _sau_rx_index
+ #define SAU_REG                   (_p_reg)
+ #define SAU_UNIT                  (_sau_unit)
+ #define SAU_TX_INDEX              (_sau_tx_index)
+ #define SAU_RX_INDEX              (_sau_rx_index)
  #define SAU_SPS_REG_INIT          (SAU_UNIT ? SAU1_SPS_REG_INIT : SAU0_SPS_REG_INIT)
 #endif
 
@@ -95,6 +103,7 @@
 #define SAU_UART_SCR_DEFAULT_VALUE           (0x0004U)
 #define SAU_UART_STCLK_MAX                   (127)
 #define SAU_UART_STCLK_MIN                   (2)
+#define SAU_UART_PRS_DIVIDER_MAX             (0xFU)
 
 #if (SAU_UART_CFG_PARAM_CHECKING_ENABLE)
 
@@ -118,6 +127,7 @@ void sau_uart_txi_isr(void);
 #endif
 
 #if SAU_UART_CFG_DTC_SUPPORT_ENABLE
+static fsp_err_t r_sau_uart_transfer_disable(transfer_instance_t const * const p_transfer);
 static fsp_err_t r_sau_uart_transfer_configure(sau_uart_instance_ctrl_t * const p_ctrl);
 
 #endif
@@ -201,6 +211,8 @@ fsp_err_t R_SAU_UART_Open (uart_ctrl_t * const p_api_ctrl, uart_cfg_t const * co
 
 #if !SAU_UART_CFG_SINGLE_CHANNEL
 
+    /* Don't use the macros here since the macros use defined locals which copy from p_ctrl. */
+
     /* Each SAU can contain up to two UART channels */
     p_ctrl->sau_unit = p_cfg->channel / 2;
 
@@ -208,13 +220,15 @@ fsp_err_t R_SAU_UART_Open (uart_ctrl_t * const p_api_ctrl, uart_cfg_t const * co
     p_ctrl->sau_tx_channel = (uint8_t) ((p_cfg->channel & 1) << 1);
 
     p_ctrl->p_reg = (R_SAU0_Type *) (R_SAU0_BASE + (SAU_REG_CHANNEL_SIZE * p_ctrl->sau_unit));
+
+    SAU_DEFINE_LOCALS(p_ctrl);
 #endif
 
     p_ctrl->p_cfg = p_cfg;
 
     p_ctrl->p_callback      = p_cfg->p_callback;
     p_ctrl->p_context       = p_cfg->p_context;
-    p_ctrl->extra_data_byte = UART_DATA_BITS_9 == p_cfg->data_bits;
+    p_ctrl->extra_data_byte = (UART_DATA_BITS_9 == p_cfg->data_bits);
 
 #if SAU_UART_CFG_DTC_SUPPORT_ENABLE
 
@@ -272,6 +286,8 @@ fsp_err_t R_SAU_UART_Close (uart_ctrl_t * const p_api_ctrl)
 
     FSP_ERROR_RETURN(SAU_UART_OPEN == p_ctrl->open, FSP_ERR_NOT_OPEN);
 #endif
+
+    SAU_DEFINE_LOCALS(p_ctrl);
 
     /* Mark the channel not open so other APIs cannot use it. */
     p_ctrl->open = 0U;
@@ -344,8 +360,22 @@ static void r_sau_uart_config_set (sau_uart_instance_ctrl_t * const p_ctrl, uart
 #endif
     sau_uart_extended_cfg_t * p_extend_cfg = (sau_uart_extended_cfg_t *) p_cfg->p_extend;
 
+    SAU_DEFINE_LOCALS(p_ctrl);
+
+#if (0 == SAU_UART_CFG_FIXED_BAUDRATE_ENABLE)
+    sau_uart_baudrate_setting_t * p_sau_baud_setting = p_extend_cfg->p_baudrate;
+
+    /* Configure the operation clock divisor based on extended configuration settings */
+    uint32_t sps_prs_offset = p_sau_baud_setting->operation_clock * R_SAU0_SPS_PRS1_Pos;
+    uint32_t sps_prs_mask   = R_SAU0_SPS_PRS0_Msk << sps_prs_offset;
+    SAU_REG->SPS =
+        (uint16_t) ((SAU_REG->SPS & (~sps_prs_mask)) |
+                    ((uint32_t) p_sau_baud_setting->prs << sps_prs_offset));
+#else
+
     /* Configure the operation clock divisor based on BSP settings */
     SAU_REG->SPS = SAU_SPS_REG_INIT;
+#endif
 
 #if (SAU_UART_CFG_TX_ENABLE)
 
@@ -368,28 +398,8 @@ static void r_sau_uart_config_set (sau_uart_instance_ctrl_t * const p_ctrl, uart
     /* Set SDR register value. */
     SAU_REG->SDR[SAU_TX_INDEX] = (uint16_t) (p_extend_cfg->p_baudrate->stclk << R_SAU0_SDR_STCLK_Pos);
 
-    SAU_CRITICAL_SECTION_ENTER();
-
-    /* Output levels cannot be changed while output is enabled. Disable, make changes, then re-enable. */
-    uint16_t reg_soe = (uint16_t) (SAU_REG->SOE & ~(1U << SAU_TX_INDEX));
-    SAU_REG->SOE = reg_soe;
-
-    /* Set the idle output level and signal level for the UART TX pin. */
-    if (SAU_UART_SIGNAL_LEVEL_INVERTED == p_extend_cfg->signal_level)
-    {
-        SAU_REG->SOL |= (uint16_t) (1U << SAU_TX_INDEX);  // Inverted signal
-        SAU_REG->SO  &= (uint16_t) ~(1U << SAU_TX_INDEX); // Set idle to low
-    }
-    else
-    {
-        SAU_REG->SOL &= (uint16_t) ~(1U << SAU_TX_INDEX); // Normal signal
-        SAU_REG->SO  |= (uint16_t) (1U << SAU_TX_INDEX);  // Set idle to high
-    }
-
-    /* Configure register SOE setting to enable serial output. */
-    SAU_REG->SOE = (uint16_t) (reg_soe | (1U << SAU_TX_INDEX));
-
-    SAU_CRITICAL_SECTION_EXIT();
+    const uint16_t tx_mask     = (uint16_t) (1U << SAU_TX_INDEX);
+    const uint16_t tx_clr_mask = (uint16_t) ~tx_mask;
 #else
 
     /* Configure register SMR setting (setting for transmit channel in Reception only mode). */
@@ -399,13 +409,44 @@ static void r_sau_uart_config_set (sau_uart_instance_ctrl_t * const p_ctrl, uart
                                  SAU_UART_SMR_MD1_UART_MODE;
 #endif
 
-#if (SAU_UART_CFG_RX_ENABLE)
+    SAU_CRITICAL_SECTION_ENTER();
+#if SAU_UART_CFG_TX_ENABLE
+
+    /* Output levels cannot be changed while output is enabled. Disable, make changes, then re-enable. */
+    uint16_t reg_soe = (uint16_t) (SAU_REG->SOE & tx_clr_mask);
+    SAU_REG->SOE = reg_soe;
+
+    /* Set the idle output level and signal level for the UART TX pin. */
+    uint16_t reg_sol = SAU_REG->SOL;
+    uint16_t reg_so  = SAU_REG->SO;
+
+    if (SAU_UART_SIGNAL_LEVEL_INVERTED == p_extend_cfg->signal_level)
+    {
+        reg_sol |= tx_mask;            // Inverted signal
+        reg_so  &= tx_clr_mask;        // Set idle to low
+    }
+    else
+    {
+        reg_sol &= tx_clr_mask;        // Normal signal
+        reg_so  |= tx_mask;            // Set idle to high
+    }
+
+    SAU_REG->SOL = reg_sol;
+    SAU_REG->SO  = reg_so;
+
+    /* Configure register SOE setting to enable serial output. */
+    SAU_REG->SOE = (uint16_t) (reg_soe | tx_mask);
+#endif
+
+#if SAU_UART_CFG_RX_ENABLE
 
     /* Configure register SNFENn setting.
      * Use a critical section since I2C and SPI need this to be disabled for their channels. */
-    SAU_CRITICAL_SECTION_ENTER();
     R_PORGA->SNFEN |= (uint8_t) (R_PORGA_SNFEN_SNFEN00_Msk << (p_cfg->channel << 1));
+#endif
     SAU_CRITICAL_SECTION_EXIT();
+
+#if (SAU_UART_CFG_RX_ENABLE)
 
     /* Configure register SIR setting. */
     SAU_REG->SIR[SAU_RX_INDEX] = (uint16_t) (SAU_UART_SIR_FRAME_ERROR_CLEAR |
@@ -462,6 +503,8 @@ fsp_err_t R_SAU_UART_Read (uart_ctrl_t * const p_api_ctrl, uint8_t * const p_des
     FSP_ERROR_RETURN(FSP_SUCCESS == err, err);
     FSP_ERROR_RETURN(0U == p_ctrl->rx_count, FSP_ERR_IN_USE);
  #endif
+
+    SAU_DEFINE_LOCALS(p_ctrl);
 
     /* Total number of words to read in this transfer.
      * Bytes is total length of the buffer, so for 9-bit it needs to be divided by 2. */
@@ -531,6 +574,8 @@ fsp_err_t R_SAU_UART_Write (uart_ctrl_t * const p_api_ctrl, uint8_t const * cons
     FSP_ERROR_RETURN(p_ctrl->p_cfg, FSP_ERR_INVALID_ARGUMENT);
  #endif
 
+    SAU_DEFINE_LOCALS(p_ctrl);
+
     /* Total number of words to write in this transfer.
      * Bytes is total length of the buffer, so for 9-bit it needs to be divided by 2.
      * Subtract one to take into account the manual write at the end of this function. */
@@ -567,15 +612,19 @@ fsp_err_t R_SAU_UART_Write (uart_ctrl_t * const p_api_ctrl, uint8_t const * cons
 
     /* Manually write the first data word.
      * Use p_src instead of p_ctrl->p_src because the latter is already adjusted for the next byte. */
+    uint16_t data_word = 0;
+
     if (p_ctrl->extra_data_byte)
     {
         /* Using 2 data bytes for 9-bit transfers. */
-        SAU_REG->SDR[SAU_TX_INDEX] = *((uint16_t *) p_src);
+        data_word = *((uint16_t *) p_src);
     }
     else
     {
-        SAU_REG->SDR[SAU_TX_INDEX] = *p_src;
+        data_word = *p_src;
     }
+
+    SAU_REG->SDR[SAU_TX_INDEX] = data_word;
 
     R_BSP_IrqEnableNoClear(p_ctrl->p_cfg->txi_irq);
 
@@ -594,6 +643,8 @@ fsp_err_t R_SAU_UART_Write (uart_ctrl_t * const p_api_ctrl, uint8_t const * cons
  * Implements @ref uart_api_t::baudSet
  *
  * @warning This terminates any in-progress transmission.
+ * @warning This function may change the operation clock frequency. Select a unique operation clock for each SAU
+ * instance if using this function.
  *
  * @retval  FSP_SUCCESS                  Baud rate was successfully changed.
  * @retval  FSP_ERR_ASSERTION            Pointer p_ctrl is NULL
@@ -622,6 +673,8 @@ fsp_err_t R_SAU_UART_BaudSet (uart_ctrl_t * const p_api_ctrl, void const * const
     FSP_ERROR_RETURN(SAU_UART_OPEN == p_ctrl->open, FSP_ERR_NOT_OPEN);
  #endif
 
+    SAU_DEFINE_LOCALS(p_ctrl);
+
     uint16_t reg_ss = 0U;
  #if (SAU_UART_CFG_TX_ENABLE)
     reg_ss |= (uint16_t) (SAU_UART_ST_START_TRG_ON << SAU_TX_INDEX);
@@ -635,17 +688,12 @@ fsp_err_t R_SAU_UART_BaudSet (uart_ctrl_t * const p_api_ctrl, void const * const
     SAU_REG->ST = reg_ss;
     FSP_HARDWARE_REGISTER_WAIT((SAU_REG->SE & reg_ss), 0U);
 
- #if (SAU_UART_CFG_TX_ENABLE)
-
-    /* Update TX operation clock setting. */
-    SAU_REG->SMR_b[SAU_TX_INDEX].CKS = p_sau_baud_setting->operation_clock & (R_SAU0_SMR_CKS_Msk >> R_SAU0_SMR_CKS_Pos);
- #endif
-
- #if (SAU_UART_CFG_RX_ENABLE)
-
-    /* Update RX operation clock setting. */
-    SAU_REG->SMR_b[SAU_RX_INDEX].CKS = p_sau_baud_setting->operation_clock & (R_SAU0_SMR_CKS_Msk >> R_SAU0_SMR_CKS_Pos);
- #endif
+    /* Configure the operation clock divisor */
+    uint32_t sps_prs_offset = p_sau_baud_setting->operation_clock * R_SAU0_SPS_PRS1_Pos;
+    uint32_t sps_prs_mask   = R_SAU0_SPS_PRS0_Msk << sps_prs_offset;
+    SAU_REG->SPS =
+        (uint16_t) ((SAU_REG->SPS & (~sps_prs_mask)) |
+                    ((uint32_t) p_sau_baud_setting->prs << sps_prs_offset));
 
     /* Set SDR register value and re-enable. */
     reg_ss = 0U;
@@ -763,53 +811,70 @@ fsp_err_t R_SAU_UART_InfoGet (uart_ctrl_t * const p_api_ctrl, uart_info_t * cons
  **********************************************************************************************************************/
 fsp_err_t R_SAU_UART_Abort (uart_ctrl_t * const p_api_ctrl, uart_dir_t communication_to_abort)
 {
-    sau_uart_instance_ctrl_t * p_ctrl = (sau_uart_instance_ctrl_t *) p_api_ctrl;
-    fsp_err_t err = FSP_ERR_UNSUPPORTED;
+#if !(SAU_UART_CFG_TX_ENABLE) && !(SAU_UART_CFG_RX_ENABLE)
+    FSP_PARAMETER_NOT_USED(p_api_ctrl);
+    FSP_PARAMETER_NOT_USED(communication_to_abort);
 
-#if (SAU_UART_CFG_PARAM_CHECKING_ENABLE)
+    return FSP_ERR_UNSUPPORTED;
+#else
+    sau_uart_instance_ctrl_t * p_ctrl = (sau_uart_instance_ctrl_t *) p_api_ctrl;
+    fsp_err_t err = FSP_SUCCESS;
+
+ #if (SAU_UART_CFG_TX_ENABLE) || (SAU_UART_CFG_DTC_SUPPORT_ENABLE)
+    uart_cfg_t const * const p_cfg = p_ctrl->p_cfg;
+ #endif
+
+ #if (SAU_UART_CFG_PARAM_CHECKING_ENABLE)
     FSP_ASSERT(p_ctrl);
     FSP_ERROR_RETURN(SAU_UART_OPEN == p_ctrl->open, FSP_ERR_NOT_OPEN);
-#endif
+ #endif
 
-#if (SAU_UART_CFG_TX_ENABLE)
+ #if (SAU_UART_CFG_TX_ENABLE)
     if (UART_DIR_TX & communication_to_abort)
     {
-        err = FSP_SUCCESS;
-        R_BSP_IrqDisable(p_ctrl->p_cfg->txi_irq);
+        R_BSP_IrqDisable(p_cfg->txi_irq);
+        p_ctrl->tx_count = 0;
 
- #if SAU_UART_CFG_DTC_SUPPORT_ENABLE
-        transfer_instance_t const * const p_dtc_tx = p_ctrl->p_cfg->p_transfer_tx;
-        if (NULL != p_dtc_tx)
-        {
-            err = p_dtc_tx->p_api->disable(p_dtc_tx->p_ctrl);
-        }
+  #if SAU_UART_CFG_DTC_SUPPORT_ENABLE
+        err = r_sau_uart_transfer_disable(p_cfg->p_transfer_tx);
+        FSP_ERROR_RETURN(FSP_SUCCESS == err, err);
+  #endif
+    }
  #endif
 
-        p_ctrl->tx_count = 0;
-        FSP_ERROR_RETURN(FSP_SUCCESS == err, err);
-    }
-#endif
-
-#if (SAU_UART_CFG_RX_ENABLE)
+ #if (SAU_UART_CFG_RX_ENABLE)
     if (UART_DIR_RX & communication_to_abort)
     {
-        err = FSP_SUCCESS;
-
- #if SAU_UART_CFG_DTC_SUPPORT_ENABLE
-        transfer_instance_t const * const p_dtc_rx = p_ctrl->p_cfg->p_transfer_rx;
-        if (NULL != p_dtc_rx)
-        {
-            err = p_dtc_rx->p_api->disable(p_dtc_rx->p_ctrl);
-        }
- #endif
+  #if SAU_UART_CFG_DTC_SUPPORT_ENABLE
+        err = r_sau_uart_transfer_disable(p_cfg->p_transfer_rx);
+  #endif
 
         p_ctrl->rx_count = 0;
-        FSP_ERROR_RETURN(FSP_SUCCESS == err, err);
     }
-#endif
+ #endif
 
     return err;
+#endif
 }
+
+#if SAU_UART_CFG_DTC_SUPPORT_ENABLE
+
+/**
+ * Performs a NULL check and disables a transfer instance.
+ * @param[in] p_transfer Transfer instance to disable
+ * @return The error code from the disable api or FSP_SUCCESS if p_transfer is NULL.
+ */
+static fsp_err_t r_sau_uart_transfer_disable (transfer_instance_t const * const p_transfer)
+{
+    if (NULL == p_transfer)
+    {
+        return FSP_SUCCESS;
+    }
+
+    return p_transfer->p_api->disable(p_transfer->p_ctrl);
+}
+
+#endif
 
 /*******************************************************************************************************************//**
  * Provides API to abort ongoing read. Reception is still enabled after abort(). Any characters received after abort()
@@ -866,13 +931,6 @@ fsp_err_t R_SAU_UART_ReadStop (uart_ctrl_t * const p_api_ctrl, uint32_t * remain
 /*******************************************************************************************************************//**
  * Calculates baud rate register settings (SDR.STCLK) for the specified SAU unit.
  *
- * @note This function calculates the baud settings with both operation clocks CK0 and CK1, then selects the operation
- * clock and register setting combination that would produce the lowest error. Call @ref R_SAU_UART_BaudSet to apply
- * the updated register settings.
- * @note Configure the operation clock frequencies such that all required baud rates can be achieved using at least one
- * of the 2 operation clocks. If all required baud rates cannot be achieved with one clock, set one operation clock to
- * a lower frequency for slow baud rates, and the second clock to a faster frequency for faster baud rates.
- *
  * @param[in]  p_ctrl                    Pointer to the SAU UART control block.
  * @param[in]  baudrate                  Baud rate [bps]. For example, 19200, 57600, 115200, etc.
  * @param[out] p_baud_setting            Baud setting information stored here if successful
@@ -900,45 +958,39 @@ fsp_err_t R_SAU_UART_BaudCalculate (sau_uart_instance_ctrl_t * const    p_ctrl,
     FSP_ERROR_RETURN(SAU_UART_OPEN == p_ctrl->open, FSP_ERR_NOT_OPEN);
  #endif
 
+    SAU_DEFINE_LOCALS(p_ctrl);
+
  #if SAU_UART_CFG_SINGLE_CHANNEL
     FSP_PARAMETER_NOT_USED(p_ctrl);
  #endif
 
-    uint32_t       best_delta_error = UINT32_MAX;
-    uint32_t       peripheral_clock = R_FSP_SystemClockHzGet(FSP_PRIV_CLOCK_ICLK);
-    const uint32_t sps              = SAU_SPS_REG_INIT;
+    uint32_t peripheral_clock = R_FSP_SystemClockHzGet(FSP_PRIV_CLOCK_ICLK);
 
-    /* Calculate settings twice, once for CK0 and once for CK1, selecting the result with the lowest error */
-    for (uint8_t prs_shift = 0; prs_shift <= R_SAU0_SPS_PRS1_Pos; prs_shift += R_SAU0_SPS_PRS1_Pos)
+    /* Calculate the optimal value of STCLK for the given CKn clock. The divisor with the lowest error
+     * is always the smallest divisor that produces valid STCLK settings. Since we search the divisors
+     * low to high, the first divisor is the optimal divisor. */
+    for (uint8_t prs = 0; prs <= SAU_UART_PRS_DIVIDER_MAX; prs++)
     {
-        uint8_t prs = (sps >> prs_shift) & R_SAU0_SPS_PRS0_Msk;
-
         /* To get the stclk divider calculate the divisor to apply to ICLK. There's a built in div/2. */
         const uint32_t divisor = baudrate << (prs + 1);
 
         /* Calculate stclk register value: STCLK = (f_mck / (2*bitrate)) - 1 */
         const uint32_t stclk = (peripheral_clock + (divisor >> 1)) / divisor - 1;
 
-        /* Get the actual baudrate given the current settings.
-         * peripheral_clock / 2^prs / (2 * (stclk + 1)) */
-        const uint32_t actual_baudrate = (peripheral_clock >> (prs + 1)) / (stclk + 1);
-        uint32_t       delta_error     = baudrate >
-                                         actual_baudrate ? baudrate - actual_baudrate : actual_baudrate - baudrate;
-
-        /* Keep settings which are valid and provide the lowest error. */
-        if ((SAU_UART_STCLK_MIN <= stclk) && (stclk <= SAU_UART_STCLK_MAX) &&
-            (delta_error < best_delta_error))
+        if ((SAU_UART_STCLK_MIN <= stclk) && (stclk <= SAU_UART_STCLK_MAX))
         {
-            best_delta_error                = delta_error;
+            /* Save the settings that provide the lowest error. */
+            p_baud_setting->prs             = prs;
             p_baud_setting->stclk           = (uint8_t) stclk;
-            p_baud_setting->operation_clock = (sau_operation_clock_t) (prs_shift == R_SAU0_SPS_PRS1_Pos);
+            p_baud_setting->operation_clock =
+                ((sau_uart_extended_cfg_t *) p_ctrl->p_cfg->p_extend)->p_baudrate->operation_clock;
+
+            return FSP_SUCCESS;
         }
     }
 
-    /* Return an error if no valid STCLK setting was found with either operation clock */
-    FSP_ERROR_RETURN(best_delta_error != UINT32_MAX, FSP_ERR_INVALID_ARGUMENT);
-
-    return FSP_SUCCESS;
+    /* Return an error if no valid STCLK setting was found */
+    return FSP_ERR_INVALID_ARGUMENT;
 #endif
 }
 
@@ -1002,6 +1054,8 @@ static fsp_err_t r_sau_uart_transfer_configure (sau_uart_instance_ctrl_t * const
 {
     fsp_err_t         err    = FSP_SUCCESS;
     transfer_info_t * p_info = NULL;
+
+    SAU_DEFINE_LOCALS(p_ctrl);
 
  #if (SAU_UART_CFG_RX_ENABLE)
     transfer_instance_t const * p_transfer_rx = p_ctrl->p_cfg->p_transfer_rx;
@@ -1104,6 +1158,9 @@ void sau_uart_txi_isr (void)
 
     /* Recover ISR context saved in open. */
     sau_uart_instance_ctrl_t * p_ctrl = (sau_uart_instance_ctrl_t *) R_FSP_IsrContextGet(irq);
+
+    SAU_DEFINE_LOCALS(p_ctrl);
+
     uint16_t reg_smr = SAU_REG->SMR[SAU_TX_INDEX];
 
     if ((p_ctrl->tx_count) && (NULL == p_ctrl->p_cfg->p_transfer_rx))
@@ -1173,7 +1230,10 @@ void sau_uart_rxi_isr (void)
 
     /* Recover ISR context saved in open. */
     sau_uart_instance_ctrl_t * p_ctrl = (sau_uart_instance_ctrl_t *) R_FSP_IsrContextGet(irq);
-    const uint16_t             data   = SAU_REG->SDR[SAU_RX_INDEX];
+
+    SAU_DEFINE_LOCALS(p_ctrl);
+
+    const uint16_t data = SAU_REG->SDR[SAU_RX_INDEX];
 
     if (!p_ctrl->rx_count)
     {
@@ -1231,6 +1291,8 @@ void sau_uart_eri_isr (void)
 
     /* Recover ISR context saved in open. */
     sau_uart_instance_ctrl_t * p_ctrl = (sau_uart_instance_ctrl_t *) R_FSP_IsrContextGet(irq);
+
+    SAU_DEFINE_LOCALS(p_ctrl);
 
     /* The data buffer must be read as part of clearing the error to avoid an overrun error after recovery. */
     const uint16_t data    = SAU_REG->SDR[SAU_RX_INDEX];

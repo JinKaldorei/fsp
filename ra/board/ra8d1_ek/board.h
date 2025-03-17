@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2020 - 2024 Renesas Electronics Corporation and/or its affiliates
+* Copyright (c) 2020 - 2025 Renesas Electronics Corporation and/or its affiliates
 *
 * SPDX-License-Identifier: BSD-3-Clause
 */
@@ -23,9 +23,9 @@
 
 /* BSP Board Specific Includes. */
 #include "board_init.h"
-#include "board_sdram.h"
 #include "board_leds.h"
 #include "board_ethernet_phy.h"
+#include "../../src/bsp/mcu/all/board_sdram.h"
 
 /***********************************************************************************************************************
  * Macro definitions

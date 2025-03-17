@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2020 - 2024 Renesas Electronics Corporation and/or its affiliates
+* Copyright (c) 2020 - 2025 Renesas Electronics Corporation and/or its affiliates
 *
 * SPDX-License-Identifier: BSD-3-Clause
 */
@@ -35,14 +35,14 @@ typedef struct mcb_sce_ecc_public_wrapped_key
 extern "C" {
  #endif
 
-typedef uintptr_t bootutil_ecdsa_p256_context;
+typedef uintptr_t bootutil_ecdsa_context;
 
-static inline void bootutil_ecdsa_p256_init (bootutil_ecdsa_p256_context * ctx)
+static inline void bootutil_ecdsa_init (bootutil_ecdsa_context * ctx)
 {
     (void) ctx;
 }
 
-static inline void bootutil_ecdsa_p256_drop (bootutil_ecdsa_p256_context * ctx)
+static inline void bootutil_ecdsa_drop (bootutil_ecdsa_context * ctx)
 {
     (void) ctx;
 }

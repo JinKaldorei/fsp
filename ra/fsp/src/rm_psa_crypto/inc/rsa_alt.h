@@ -64,6 +64,9 @@ extern "C" {
 /** RSA Public Exponent (E) in big endian form  */
   #define RSA_PUBLIC_EXPONENT_BE     (0x00010001)
 
+/** RSA1024 bits */
+  #define RSA_1024_BITS              (1024)
+
 /** RSA2048 bits */
   #define RSA_2048_BITS              (2048)
 
@@ -116,14 +119,6 @@ typedef struct mbedtls_rsa_context
     mbedtls_threading_mutex_t mutex;   /*!<  Thread-safety mutex. */
   #endif
 } mbedtls_rsa_context;
-
-/* This declaration is here as well as in constant_time_internal.h but is excluded
- * if MBEDTLS_RSA_ALT is defined. */
-int mbedtls_ct_rsaes_pkcs1_v15_unpadding(unsigned char * input,
-                                         size_t          ilen,
-                                         unsigned char * output,
-                                         size_t          output_max_len,
-                                         size_t        * olen);
 
  #endif                                /* MBEDTLS_RSA_ALT */
 

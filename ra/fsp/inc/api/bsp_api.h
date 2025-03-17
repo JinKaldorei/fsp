@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2020 - 2024 Renesas Electronics Corporation and/or its affiliates
+* Copyright (c) 2020 - 2025 Renesas Electronics Corporation and/or its affiliates
 *
 * SPDX-License-Identifier: BSD-3-Clause
 */
@@ -64,6 +64,10 @@
 /* BSP Common Includes (Other than bsp_common.h) */
  #include "../../src/bsp/mcu/all/bsp_delay.h"
  #include "../../src/bsp/mcu/all/bsp_mcu_api.h"
+
+ #if __has_include("../../src/bsp/mcu/all/internal/bsp_internal.h")
+  #include "../../src/bsp/mcu/all/internal/bsp_internal.h"
+ #endif
 
 #endif
 

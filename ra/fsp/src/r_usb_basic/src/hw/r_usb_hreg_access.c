@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2020 - 2024 Renesas Electronics Corporation and/or its affiliates
+* Copyright (c) 2020 - 2025 Renesas Electronics Corporation and/or its affiliates
 *
 * SPDX-License-Identifier: BSD-3-Clause
 */
@@ -582,6 +582,7 @@ uint16_t hw_usb_hread_devadd (usb_utr_t * ptr, uint16_t devsel)
 
     if (devadr > USB_MAXDEVADDR)
     {
+        USB_PRINTF1("### hw_usb_hread_devadd USB_MAXDEVADDR (%d)\n", devadr);
         result = USB_ERROR;
     }
     else
@@ -834,7 +835,7 @@ void hw_usb_hmodule_init (uint8_t usb_ip)
     else
     {
   #if defined(USB_HIGH_SPEED_MODULE)
-        USB_M1->PHYSET = (USB_DIRPD | USB_PLLRESET | USB_CLKSEL);
+        USB_M1->PHYSET |= (USB_DIRPD | USB_CLKSEL);
 
    #if USB_CFG_CLKSEL == USB_CFG_48MHZ
         USB_M1->PHYSET &= (uint16_t) ~USB_CLKSEL;

@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2020 - 2024 Renesas Electronics Corporation and/or its affiliates
+* Copyright (c) 2020 - 2025 Renesas Electronics Corporation and/or its affiliates
 *
 * SPDX-License-Identifier: BSD-3-Clause
 */
@@ -50,9 +50,13 @@
  #include "r_usb_huvc_cfg.h"
 #endif                                 /* defined(USB_CFG_HPRN_USE) */
 
+#if defined(USB_CFG_HAUD_USE)
+ #include "r_usb_haud_cfg.h"
+#endif                                 /* defined(USB_CFG_HAUD_USE) */
+
 #if ((USB_CFG_MODE & USB_CFG_HOST) == USB_CFG_HOST)
 
- #if (USB_CFG_DMA == USB_CFG_ENABLE)
+ #if (USB_CFG_DMA == USB_CFG_ENABLE || USB_CFG_DTC == USB_CFG_ENABLE)
 extern transfer_instance_t * g_p_usbx_transfer_tx;
 extern transfer_instance_t * g_p_usbx_transfer_rx;
  #endif                                /* #if (USB_CFG_DMA == USB_CFG_ENABLE) */
@@ -550,7 +554,9 @@ uint16_t usb_hstd_get_device_address (usb_utr_t * ptr, uint16_t pipe)
 
     if (USB_MAX_PIPE_NO < pipe)
     {
+        USB_PRINTF1("*** usb_hstd_get_device_address PipeNo ERROR %d\n", pipe);
         result = USB_ERROR;            /* Error */
+        return result;
     }
 
     /* Host */
@@ -596,6 +602,8 @@ uint16_t usb_hstd_write_data (usb_utr_t * ptr, uint16_t pipe, uint16_t pipemode)
 
     if (USB_MAX_PIPE_NO < pipe)
     {
+        USB_PRINTF1("### usb_hstd_write_data PipeNo ERROR pipenum:%d\n", pipe);
+
         return USB_WRITESHRT;          /* Error */
     }
 
@@ -847,6 +855,8 @@ uint16_t usb_hstd_read_data (usb_utr_t * ptr, uint16_t pipe, uint16_t pipemode)
 
     if (USB_MAX_PIPE_NO < pipe)
     {
+        USB_PRINTF1("*** usb_hstd_read_data PipeNo ERROR %d\n", pipe);
+
         return USB_ERROR;              /* Error */
     }
 
@@ -1406,6 +1416,10 @@ uint8_t usb_hstd_make_pipe_reg_info (uint16_t               ip_no,
                 pipe_cfg |= (uint16_t) (USB_CFG_CNTMD);
             }
  #endif                                /* defined (USB_HIGH_SPEED_MODULE) */
+
+            /* Get value for Interval Error Detection Interval  */
+            pipe_peri = usb_hstd_get_pipe_peri_value(speed, descriptor[USB_EP_B_INTERVAL]);
+
             break;
         }
 
@@ -1855,6 +1869,50 @@ uint8_t usb_hstd_get_pipe_no (uint16_t ip_no, uint16_t address, uint16_t usb_cla
             break;
         }
 
+        case USB_CLASS_INTERNAL_HAUD:
+        {
+ #if defined(USB_CFG_HAUD_USE)
+            if (USB_EP_ISO == type)
+            {
+                if (USB_PIPE_DIR_IN == dir)
+                {
+                    switch (address)
+                    {
+                        case 1:        /* Root port device1 */
+                        case 2:        /* Hub downport device1 */
+                        {
+                            pipe_no = USB_CFG_HAUD_ISO_IN;
+                            break;
+                        }
+
+                        default:
+                        {
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    switch (address)
+                    {
+                        case 1:        /* Root port device1 */
+                        case 2:        /* Hub downport device1 */
+                        {
+                            pipe_no = USB_CFG_HAUD_ISO_OUT;
+                            break;
+                        }
+
+                        default:
+                        {
+                            break;
+                        }
+                    }
+                }
+            }
+ #endif                                /* defined(USB_CFG_HAUD_USE) */
+            break;
+        }
+
         case USB_HUB:
         {
             pipe_no = USB_HUB_PIPE;
@@ -2101,6 +2159,20 @@ uint16_t usb_hstd_get_pipe_buf_value (uint16_t pipe_no)
             break;
         }
   #endif                               /* defined(USB_CFG_PAUD_USE) */
+
+  #if defined(USB_CFG_HAUD_USE)
+        case USB_CFG_HAUD_ISO_IN:
+        {
+            pipe_buf = (USB_BUF_SIZE(2048u) | USB_BUF_NUMB(8u));
+            break;
+        }
+
+        case USB_CFG_HAUD_ISO_OUT:
+        {
+            pipe_buf = (USB_BUF_SIZE(2048u) | USB_BUF_NUMB(72u));
+            break;
+        }
+  #endif                               /* defined(USB_CFG_HAUD_USE) */
 
         default:
         {

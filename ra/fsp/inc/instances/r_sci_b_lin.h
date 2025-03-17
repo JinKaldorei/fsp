@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2020 - 2024 Renesas Electronics Corporation and/or its affiliates
+* Copyright (c) 2020 - 2025 Renesas Electronics Corporation and/or its affiliates
 *
 * SPDX-License-Identifier: BSD-3-Clause
 */
@@ -189,9 +189,18 @@ typedef struct st_sci_b_lin_extended_cfg
     /* Interrupt settings */
     IRQn_Type bfd_irq;                            ///< Break field detect IRQ number
     IRQn_Type aed_irq;                            ///< Active edge detect IRQ number
+    IRQn_Type rxi_irq;                            ///< Receive interrupt IRQ number
+    IRQn_Type txi_irq;                            ///< Transmit interrupt IRQ number
+    IRQn_Type tei_irq;                            ///< Transmit end interrupt IRQ number
+    IRQn_Type eri_irq;                            ///< Error interrupt IRQ number
     uint8_t   bfd_ipl;                            ///< Break field detect interrupt priority
     uint8_t   aed_ipl;                            ///< Active edge detect interrupt priority
-    uint16_t  break_bits;                         ///< Master mode: Number of break field bits to transmit. Slave mode: Number of break field threshold bits.
+    uint8_t   rxi_ipl;                            ///< Receive interrupt priority
+    uint8_t   txi_ipl;                            ///< Transmit interrupt priority
+    uint8_t   tei_ipl;                            ///< Transmit end interrupt priority
+    uint8_t   eri_ipl;                            ///< Error interrupt priority
+
+    uint16_t break_bits;                          ///< Master mode: Number of break field bits to transmit. Slave mode: Number of break field threshold bits.
 } sci_b_lin_extended_cfg_t;
 
 /* LIN Instance Control Block. DO NOT INITIALIZE.  */
@@ -241,11 +250,14 @@ fsp_err_t R_SCI_B_LIN_CallbackSet(lin_ctrl_t * const          p_api_ctrl,
                                   void (                    * p_callback)(lin_callback_args_t *),
                                   void const * const          p_context,
                                   lin_callback_args_t * const p_callback_memory);
-fsp_err_t R_SCI_B_LIN_IdFilterSet(lin_ctrl_t * const p_api_ctrl, sci_b_lin_id_filter_setting_t const * const p_config);
-fsp_err_t R_SCI_B_LIN_IdFilterGet(lin_ctrl_t * const p_api_ctrl, sci_b_lin_id_filter_setting_t * const p_config);
-fsp_err_t R_SCI_B_LIN_Close(lin_ctrl_t * const p_api_ctrl);
 fsp_err_t R_SCI_B_LIN_BaudCalculate(sci_b_lin_baud_params_t const * const p_baud_params,
                                     sci_b_lin_baud_setting_t * const      p_baud_setting);
+fsp_err_t R_SCI_B_LIN_IdFilterSet(lin_ctrl_t * const p_api_ctrl, sci_b_lin_id_filter_setting_t const * const p_config);
+fsp_err_t R_SCI_B_LIN_IdFilterGet(lin_ctrl_t * const p_api_ctrl, sci_b_lin_id_filter_setting_t * const p_config);
+fsp_err_t R_SCI_B_LIN_WakeupSend(lin_ctrl_t * const p_api_ctrl);
+fsp_err_t R_SCI_B_LIN_SleepEnter(lin_ctrl_t * const p_api_ctrl);
+fsp_err_t R_SCI_B_LIN_SleepExit(lin_ctrl_t * const p_api_ctrl);
+fsp_err_t R_SCI_B_LIN_Close(lin_ctrl_t * const p_api_ctrl);
 
 /*******************************************************************************************************************//**
  * @} (end addtogroup SCI_B_LIN)

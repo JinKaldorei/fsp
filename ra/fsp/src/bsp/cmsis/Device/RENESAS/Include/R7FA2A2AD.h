@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 - 2024 Renesas Electronics Corporation and/or its affiliates
+ * Copyright (c) 2020 - 2025 Renesas Electronics Corporation and/or its affiliates
 *
 * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -466,24 +466,41 @@ typedef struct
             uint8_t                : 2;
         } STAT_b;
     };
-    __IM uint8_t RESERVED[7];
+    __IM uint8_t  RESERVED;
+    __IM uint16_t RESERVED1;
+    __IM uint32_t RESERVED2;
 
     union
     {
-        __IOM uint8_t CLR;              /*!< (@ 0x00000008) Bus Error Clear Register                                   */
-
-        struct
+        union
         {
-            __IOM uint8_t SLERRCLR : 1; /*!< [0..0] Slave Bus Error Clear.                                             */
-            __IOM uint8_t STERRCLR : 1; /*!< [1..1] Slave TrustZone filter Error Status.                               */
-            uint8_t                : 1;
-            __IOM uint8_t MMERRCLR : 1; /*!< [3..3] Master MPU Error Clear.                                            */
-            __IOM uint8_t ILERRCLR : 1; /*!< [4..4] Illegal Address Access Error Clear.                                */
-            __IOM uint8_t MSERRCLR : 1; /*!< [5..5] Master Security Attribution Unit Error Clear.                      */
-            uint8_t                : 2;
-        } CLR_b;
+            __IOM uint32_t IRQEN;      /*!< (@ 0x00000008) BUS Error IRQ Enable                                       */
+
+            struct
+            {
+                __IOM uint32_t EN : 1; /*!< [0..0] Bus interrupt request permission setting to ICU when
+                                        *   a bus error occurs                                                        */
+                uint32_t : 31;
+            } IRQEN_b;
+        };
+
+        union
+        {
+            __IOM uint8_t CLR;              /*!< (@ 0x00000008) Bus Error Clear Register                                   */
+
+            struct
+            {
+                __IOM uint8_t SLERRCLR : 1; /*!< [0..0] Slave Bus Error Clear.                                             */
+                __IOM uint8_t STERRCLR : 1; /*!< [1..1] Slave TrustZone filter Error Status.                               */
+                uint8_t                : 1;
+                __IOM uint8_t MMERRCLR : 1; /*!< [3..3] Master MPU Error Clear.                                            */
+                __IOM uint8_t ILERRCLR : 1; /*!< [4..4] Illegal Address Access Error Clear.                                */
+                __IOM uint8_t MSERRCLR : 1; /*!< [5..5] Master Security Attribution Unit Error Clear.                      */
+                uint8_t                : 2;
+            } CLR_b;
+        };
     };
-    __IM uint8_t RESERVED1[7];
+    __IM uint32_t RESERVED3;
 } R_BUS_BUSERRb_Type;                  /*!< Size = 16 (0x10)                                                          */
 
 /**
@@ -700,27 +717,13 @@ typedef struct
 
     union
     {
-        union
+        __IOM uint32_t PIBI;           /*!< (@ 0x00000070) Bus Slave Arbitration Control Register                     */
+
+        struct
         {
-            __IOM uint32_t PIBI;         /*!< (@ 0x00000070) Bus Slave Arbitration Control Register                     */
-
-            struct
-            {
-                __IOM uint32_t ARBS : 1; /*!< [0..0] Arbitration Select for slave.                                      */
-                uint32_t            : 31;
-            } PIBI_b;
-        };
-
-        union
-        {
-            __IOM uint32_t CPU1TCMBI;    /*!< (@ 0x00000070) Bus Slave Arbitration Control Register                     */
-
-            struct
-            {
-                __IOM uint32_t ARBS : 1; /*!< [0..0] Arbitration Select for slave.                                      */
-                uint32_t            : 31;
-            } CPU1TCMBI_b;
-        };
+            __IOM uint32_t ARBS : 1;   /*!< [0..0] Arbitration Select for slave.                                      */
+            uint32_t            : 31;
+        } PIBI_b;
     };
     __IM uint32_t RESERVED12;
 
@@ -2221,7 +2224,7 @@ typedef struct                         /*!< (@ 0x4005C000) R_ADC0 Structure     
 
             struct
             {
-                __IM uint16_t AD : 14;    /*!< [13..0] A/D-converted value (right-justified)The format for
+                __IM uint16_t AD : 14;    /*!< [13..0] A/D-converted value (right-justified). The format for
                                            *   data determine ADCER.ADRFMT and ADCER.ADPRC.                              */
                 __IM uint16_t DIAGST : 2; /*!< [15..14] Self-Diagnosis Status                                            */
             } ADRD_RIGHT_b;
@@ -2234,7 +2237,7 @@ typedef struct                         /*!< (@ 0x4005C000) R_ADC0 Structure     
             struct
             {
                 __IM uint16_t DIAGST : 2;  /*!< [1..0] Self-Diagnosis Status                                              */
-                __IM uint16_t AD     : 14; /*!< [15..2] A/D-converted value (right-justified)The format for
+                __IM uint16_t AD     : 14; /*!< [15..2] A/D-converted value (left-justified). The format for
                                             *   data determine ADCER.ADRFMT and ADCER.ADPRC.                              */
             } ADRD_LEFT_b;
         };
@@ -3389,9 +3392,22 @@ typedef struct                          /*!< (@ 0x40003000) R_BUS Structure     
             uint32_t                : 15;
         } BUSDIVBYP_b;
     };
-    __IM uint32_t            RESERVED7[319];
+    __IM uint32_t RESERVED7[63];
+
+    union
+    {
+        __IOM uint16_t BUSTHRPUT;      /*!< (@ 0x00001400) Graphic Bus Throughput Control Register                    */
+
+        struct
+        {
+            __IOM uint16_t DIS : 1;    /*!< [0..0] Bandwidth Control Function                                         */
+            uint16_t           : 15;
+        } BUSTHRPUT_b;
+    };
+    __IM uint16_t            RESERVED8;
+    __IM uint32_t            RESERVED9[255];
     __IOM R_BUS_BUSERRa_Type BUSERRa[12]; /*!< (@ 0x00001800) Bus Error Registers                                        */
-    __IM uint32_t            RESERVED8[16];
+    __IM uint32_t            RESERVED10[16];
 
     union
     {
@@ -3399,16 +3415,16 @@ typedef struct                          /*!< (@ 0x40003000) R_BUS Structure     
         __IOM R_BUS_BMSAERR_Type BMSAERR[9]; /*!< (@ 0x00001900) Bus Master Security Attribution Unit Error Address
                                               *                  and Read/Write Status registers.                           */
     };
-    __IM uint32_t RESERVED9[28];
+    __IM uint32_t RESERVED11[28];
 
     union
     {
         __IOM R_BUS_BUSERRb_Type    BUSERRb[12]; /*!< (@ 0x00001A00) Bus Error Registers                                        */
         __IOM R_BUS_DMACDTCERR_Type DMACDTCERR;  /*!< (@ 0x00001A00) DMAC/DTC Error Registers                                   */
     };
-    __IM uint32_t           RESERVED10[16];
+    __IM uint32_t           RESERVED12[16];
     __IOM R_BUS_MBWERR_Type MBWERR;              /*!< (@ 0x00001B00) Master Bufferable Write Error Registers                    */
-    __IM uint32_t           RESERVED11[5];
+    __IM uint32_t           RESERVED13[5];
     __IOM R_BUS_MBWERR_Type SBWERR;              /*!< (@ 0x00001B20) Slave Bufferable Write Error Registers                     */
 } R_BUS_Type;                                    /*!< Size = 6956 (0x1b2c)                                                      */
 
@@ -3776,11 +3792,22 @@ typedef struct                         /*!< (@ 0x40005400) R_DTC Structure      
 
         struct
         {
-            __IOM uint32_t DTCVBR : 32; /*!< [31..0] DTC Vector Base Address.Note: A value cannot be set
-                                         *   in the lower-order 10 bits. These bits are fixed to 0.                    */
+            __IOM uint32_t DTCVBR : 32; /*!< [31..0] DTC Vector Base Address.                                          */
         } DTCVBR_b;
     };
-    __IM uint32_t RESERVED2;
+
+    union
+    {
+        __IOM uint8_t DTCADMOD;        /*!< (@ 0x00000008) DTC Address Mode Register                                  */
+
+        struct
+        {
+            __IOM uint8_t SHORT : 1;   /*!< [0..0] Short-Address Mode Set                                             */
+            uint8_t             : 7;
+        } DTCADMOD_b;
+    };
+    __IM uint8_t  RESERVED2;
+    __IM uint16_t RESERVED3;
 
     union
     {
@@ -3792,7 +3819,7 @@ typedef struct                         /*!< (@ 0x40005400) R_DTC Structure      
             uint8_t             : 7;
         } DTCST_b;
     };
-    __IM uint8_t RESERVED3;
+    __IM uint8_t RESERVED4;
 
     union
     {
@@ -3815,15 +3842,34 @@ typedef struct                         /*!< (@ 0x40005400) R_DTC Structure      
 
         struct
         {
-            uint8_t            : 4;
-            __IOM uint8_t RRSS : 1;    /*!< [4..4] DTC Transfer Information Read Skip Enable for Secure               */
-            uint8_t            : 3;
+            uint8_t           : 4;
+            __IOM uint8_t RRS : 1;     /*!< [4..4] DTC Transfer Information Read Skip Enable.                         */
+            uint8_t           : 3;
         } DTCCR_SEC_b;
     };
-    __IM uint8_t   RESERVED4;
-    __IM uint16_t  RESERVED5;
-    __IOM uint32_t DTCVBR_SEC;         /*!< (@ 0x00000014) DTC Vector Base Register for secure Region                 */
-    __IM uint32_t  RESERVED6[2];
+    __IM uint8_t  RESERVED5;
+    __IM uint16_t RESERVED6;
+
+    union
+    {
+        __IOM uint32_t DTCVBR_SEC;      /*!< (@ 0x00000014) DTC Vector Base Register for secure Region                 */
+
+        struct
+        {
+            __IOM uint32_t DTCVBR : 32; /*!< [31..0] DTC Vector Base Address.                                          */
+        } DTCVBR_SEC_b;
+    };
+
+    union
+    {
+        __IOM uint32_t DTCDISP;          /*!< (@ 0x00000018) DTC Address Displacement Register                          */
+
+        struct
+        {
+            __IOM uint32_t DTCDISP : 32; /*!< [31..0] DTC Address Displacement                                          */
+        } DTCDISP_b;
+    };
+    __IM uint32_t RESERVED7;
 
     union
     {
@@ -3838,7 +3884,44 @@ typedef struct                         /*!< (@ 0x40005400) R_DTC Structure      
             uint32_t              : 15;
         } DTEVR_b;
     };
-} R_DTC_Type;                          /*!< Size = 36 (0x24)                                                          */
+
+    union
+    {
+        __IOM uint32_t DTCIBR;         /*!< (@ 0x00000024) DTC Index Table Base Register                              */
+
+        struct
+        {
+            uint32_t              : 10;
+            __IOM uint32_t DTCIBR : 22; /*!< [31..10] DTC Index Table Base Address                                     */
+        } DTCIBR_b;
+    };
+
+    union
+    {
+        __IOM uint8_t DTCOR;           /*!< (@ 0x00000028) DTC Operation Register                                     */
+
+        struct
+        {
+            __IOM uint8_t SQTFRL : 1;  /*!< [0..0] Sequence Transfer Stop                                             */
+            uint8_t              : 7;
+        } DTCOR_b;
+    };
+    __IM uint8_t  RESERVED8;
+    __IM uint16_t RESERVED9;
+
+    union
+    {
+        __IOM uint16_t DTCSQE;         /*!< (@ 0x0000002C) DTC Sequence Transfer Enable Register                      */
+
+        struct
+        {
+            __IOM uint16_t VECN   : 8; /*!< [7..0] DTC Sequence Transfer Vector Number Specified                      */
+            uint16_t              : 7;
+            __IOM uint16_t ESPSEL : 1; /*!< [15..15] DTC Sequence Transfer Enable                                     */
+        } DTCSQE_b;
+    };
+    __IM uint16_t RESERVED10;
+} R_DTC_Type;                          /*!< Size = 48 (0x30)                                                          */
 
 /* =========================================================================================================================== */
 /* ================                                           R_ELC                                           ================ */
@@ -4954,7 +5037,8 @@ typedef struct                         /*!< (@ 0x40078000) R_GPT0 Structure     
             __IOM uint32_t ASELCF : 1;   /*!< [21..21] ELC_GPT Event Source GTCCRA Input Capture Enable                 */
             __IOM uint32_t ASELCG : 1;   /*!< [22..22] ELC_GPT Event Source GTCCRA Input Capture Enable                 */
             __IOM uint32_t ASELCH : 1;   /*!< [23..23] ELC_GPT Event Source GTCCRA Input Capture Enable                 */
-            uint32_t              : 8;
+            __IOM uint32_t ASOC   : 1;   /*!< [24..24] Other channel Source GTCCRA Input Capture Enable                 */
+            uint32_t              : 7;
         } GTICASR_b;
     };
 
@@ -5001,7 +5085,8 @@ typedef struct                         /*!< (@ 0x40078000) R_GPT0 Structure     
             __IOM uint32_t BSELCF : 1;   /*!< [21..21] ELC_GPT Event Source GTCCRB Input Capture Enable                 */
             __IOM uint32_t BSELCG : 1;   /*!< [22..22] ELC_GPT Event Source GTCCRB Input Capture Enable                 */
             __IOM uint32_t BSELCH : 1;   /*!< [23..23] ELC_GPT Event Source GTCCRB Input Capture Enable                 */
-            uint32_t              : 8;
+            __IOM uint32_t BSOC   : 1;   /*!< [24..24] Other channel Source GTCCRB Input Capture Enable                 */
+            uint32_t              : 7;
         } GTICBSR_b;
     };
 
@@ -5012,7 +5097,10 @@ typedef struct                         /*!< (@ 0x40078000) R_GPT0 Structure     
         struct
         {
             __IOM uint32_t CST     : 1; /*!< [0..0] Count Start                                                        */
-            uint32_t               : 7;
+            uint32_t               : 3;
+            __IOM uint32_t AINV    : 1; /*!< [4..4] GTIOCnA input/output pin polarity reversal control                 */
+            __IOM uint32_t BINV    : 1; /*!< [5..5] GTIOCnB input/output pin polarity reversal control                 */
+            uint32_t               : 2;
             __IOM uint32_t ICDS    : 1; /*!< [8..8] Input Capture Operation Select During Count Stop                   */
             __IOM uint32_t SCGTIOC : 1; /*!< [9..9] GTIOC input Source Synchronous Clear Enable                        */
             __IOM uint32_t SSCGRP  : 2; /*!< [11..10] Synchronous Set/Clear Group Select                               */
@@ -5029,24 +5117,26 @@ typedef struct                         /*!< (@ 0x40078000) R_GPT0 Structure     
 
     union
     {
-        __IOM uint32_t GTUDDTYC;       /*!< (@ 0x00000030) General PWM Timer Count Direction and Duty Setting
-                                        *                  Register                                                   */
+        __IOM uint32_t GTUDDTYC;        /*!< (@ 0x00000030) General PWM Timer Count Direction and Duty Setting
+                                         *                  Register                                                   */
 
         struct
         {
-            __IOM uint32_t UD     : 1; /*!< [0..0] Count Direction Setting                                            */
-            __IOM uint32_t UDF    : 1; /*!< [1..1] Forcible Count Direction Setting                                   */
+            __IOM uint32_t UD     : 1;  /*!< [0..0] Count Direction Setting                                            */
+            __IOM uint32_t UDF    : 1;  /*!< [1..1] Forcible Count Direction Setting                                   */
             uint32_t              : 14;
-            __IOM uint32_t OADTY  : 2; /*!< [17..16] GTIOCA Output Duty Setting                                       */
-            __IOM uint32_t OADTYF : 1; /*!< [18..18] Forcible GTIOCA Output Duty Setting                              */
-            __IOM uint32_t OADTYR : 1; /*!< [19..19] GTIOCA Output Value Selecting after Releasing 0 percent/100
-                                        *   percent Duty Setting                                                      */
+            __IOM uint32_t OADTY  : 2;  /*!< [17..16] GTIOCA Output Duty Setting                                       */
+            __IOM uint32_t OADTYF : 1;  /*!< [18..18] Forcible GTIOCA Output Duty Setting                              */
+            __IOM uint32_t OADTYR : 1;  /*!< [19..19] GTIOCA Output Value Selecting after Releasing 0 percent/100
+                                         *   percent Duty Setting                                                      */
             uint32_t              : 4;
-            __IOM uint32_t OBDTY  : 2; /*!< [25..24] GTIOCB Output Duty Setting                                       */
-            __IOM uint32_t OBDTYF : 1; /*!< [26..26] Forcible GTIOCB Output Duty Setting                              */
-            __IOM uint32_t OBDTYR : 1; /*!< [27..27] GTIOCB Output Value Selecting after Releasing 0 percent/100
-                                        *   percent Duty Setting                                                      */
-            uint32_t : 4;
+            __IOM uint32_t OBDTY  : 2;  /*!< [25..24] GTIOCB Output Duty Setting                                       */
+            __IOM uint32_t OBDTYF : 1;  /*!< [26..26] Forcible GTIOCB Output Duty Setting                              */
+            __IOM uint32_t OBDTYR : 1;  /*!< [27..27] GTIOCB Output Value Selecting after Releasing 0 percent/100
+                                         *   percent Duty Setting                                                      */
+            __IOM uint32_t OABDTYT : 1; /*!< [28..28] GTIOCnA,B pin output 0%/100% duty setting reflection
+                                         *   timing setting                                                            */
+            uint32_t : 3;
         } GTUDDTYC_b;
     };
 
@@ -5090,12 +5180,24 @@ typedef struct                         /*!< (@ 0x40078000) R_GPT0 Structure     
 
     union
     {
-        __IOM uint32_t GTINTAD;        /*!< (@ 0x00000038) General PWM Timer Interrupt Output Setting Register        */
+        __IOM uint32_t GTINTAD;          /*!< (@ 0x00000038) General PWM Timer Interrupt Output Setting Register        */
 
         struct
         {
-            uint32_t            : 8;
-            __IOM uint32_t SCFA : 1;     /*!< [8..8] GTCCRn Register Compare Match/Input Capture Source Synchronous
+            __IOM uint32_t GTINTA : 1;   /*!< [0..0] GTCCRA Register Compare Match/Input Capture Interrupt
+                                          *   Enable                                                                    */
+            __IOM uint32_t GTINTB : 1;   /*!< [1..1] GTCCRB Register Compare Match/Input Capture Interrupt
+                                          *   Enable                                                                    */
+            __IOM uint32_t GTINTC : 1;   /*!< [2..2] GTCCRC Register Compare Match/Input Capture Interrupt
+                                          *   Enable                                                                    */
+            __IOM uint32_t GTINTD : 1;   /*!< [3..3] GTCCRD Register Compare Match/Input Capture Interrupt
+                                          *   Enable                                                                    */
+            __IOM uint32_t GTINTE : 1;   /*!< [4..4] GTCCRE Register Compare Match/Input Capture Interrupt
+                                          *   Enable                                                                    */
+            __IOM uint32_t GTINTF : 1;   /*!< [5..5] GTCCRF Register Compare Match/Input Capture Interrupt
+                                          *   Enable                                                                    */
+            __IOM uint32_t GTINTPR : 2;  /*!< [7..6] GTPR Register Compare Match Interrupt Enable                       */
+            __IOM uint32_t SCFA    : 1;  /*!< [8..8] GTCCRn Register Compare Match/Input Capture Source Synchronous
                                           *   Clear Enable                                                              */
             __IOM uint32_t SCFB : 1;     /*!< [9..9] GTCCRn Register Compare Match/Input Capture Source Synchronous
                                           *   Clear Enable                                                              */
@@ -5572,7 +5674,57 @@ typedef struct                         /*!< (@ 0x40078000) R_GPT0 Structure     
             uint32_t            : 4;
         } GTPC_b;
     };
-    __IM uint32_t RESERVED[4];
+
+    union
+    {
+        __IOM uint32_t GTADCMSC;            /*!< (@ 0x000000C0) General PWM Timer A/D Conversion Start Request
+                                             *                  Compare Match Skipping Control Register                    */
+
+        struct
+        {
+            __IOM uint32_t ADCMSC1 : 2;     /*!< [1..0] A/D Conversion Start Request Compare Match Skipping Counter
+                                             *   1 Count Source Select                                                     */
+            uint32_t               : 2;
+            __IOM uint32_t ADCMST1 : 4;     /*!< [7..4] A/D Conversion Start Request Compare Match Skipping 1
+                                             *   Skipping Count Setting                                                    */
+            __IOM uint32_t ADCMSCNT1IV : 4; /*!< [11..8] A/D Conversion Start Request Compare Match Skipping
+                                             *   Counter 1 Initial Value                                                   */
+            __IM uint32_t ADCMSCNT1 : 4;    /*!< [15..12] A/D Conversion Start Request Compare Match Skipping
+                                             *   Counter 1                                                                 */
+            __IOM uint32_t ADCMSC2 : 2;     /*!< [17..16] A/D Conversion Start Request Compare Match Skipping
+                                             *   Counter 2 Count Source Select                                             */
+            uint32_t               : 2;
+            __IOM uint32_t ADCMST2 : 4;     /*!< [23..20] A/D Conversion Start Request Compare Match Skipping
+                                             *   2 Skipping Count Setting                                                  */
+            __IOM uint32_t ADCMSCNT2IV : 4; /*!< [27..24] A/D Conversion Start Request Compare Match Skipping
+                                             *   Counter 2 Initial Value                                                   */
+            __IM uint32_t ADCMSCNT2 : 4;    /*!< [31..28] A/D Conversion Start Request Compare Match Skipping
+                                             *   Counter 2                                                                 */
+        } GTADCMSC_b;
+    };
+
+    union
+    {
+        __IOM uint32_t GTADCMSS;        /*!< (@ 0x000000C4) General PWM Timer A/D Conversion Start Request
+                                         *                  Compare Match Skipping Setting Register                    */
+
+        struct
+        {
+            __IOM uint32_t ADCMSAL : 3; /*!< [2..0] GTADTRA Register A/D Conversion Start Request Compare
+                                         *   Match Skipping Function Select                                            */
+            uint32_t               : 1;
+            __IOM uint32_t ADCMSBL : 3; /*!< [6..4] GTADTRB Register A/D Conversion Start Request Compare
+                                         *   Match Skipping Function Select                                            */
+            uint32_t               : 9;
+            __IOM uint32_t ADCMBSA : 3; /*!< [18..16] GTADTRA Register Buffer Transfer by A/D Conversion
+                                         *   Start Request Compare Match Skipping Function Select                      */
+            uint32_t               : 1;
+            __IOM uint32_t ADCMBSB : 3; /*!< [22..20] GTADTRB Register Buffer Transfer by A/D Conversion
+                                         *   Start Request Compare Match Skipping Function Select                      */
+            uint32_t : 9;
+        } GTADCMSS_b;
+    };
+    __IM uint32_t RESERVED[2];
 
     union
     {
@@ -5810,47 +5962,43 @@ typedef struct                         /*!< (@ 0x40078FF0) R_GPT_OPS Structure  
  * @brief Port Output Enable for GPT (R_GPT_POEG0)
  */
 
-typedef struct                          /*!< (@ 0x40042000) R_GPT_POEG0 Structure                                      */
+typedef struct                         /*!< (@ 0x40042000) R_GPT_POEG0 Structure                                      */
 {
     union
     {
-        __IOM uint32_t POEGG;           /*!< (@ 0x00000000) POEG Group Setting Register                                */
+        __IOM uint32_t POEGG;          /*!< (@ 0x00000000) POEG Group Setting Register                                */
 
         struct
         {
-            __IOM uint32_t PIDF  : 1;   /*!< [0..0] Port Input Detection Flag                                          */
-            __IOM uint32_t IOCF  : 1;   /*!< [1..1] Real Time Overcurrent Detection Flag                               */
-            __IOM uint32_t OSTPF : 1;   /*!< [2..2] Oscillation Stop Detection Flag                                    */
-            __IOM uint32_t SSF   : 1;   /*!< [3..3] Software Stop Flag                                                 */
-            __IOM uint32_t PIDE  : 1;   /*!< [4..4] Port Input Detection Enable. Note: Can be modified only
-                                         *   once after a reset.                                                       */
-            __IOM uint32_t IOCE : 1;    /*!< [5..5] Enable for GPT Output-Disable Request. Note: Can be modified
-                                         *   only once after a reset.                                                  */
-            __IOM uint32_t OSTPE : 1;   /*!< [6..6] Oscillation Stop Detection Enable. Note: Can be modified
-                                         *   only once after a reset.                                                  */
+            __IOM uint32_t PIDF  : 1;  /*!< [0..0] Port Input Detection Flag                                          */
+            __IOM uint32_t IOCF  : 1;  /*!< [1..1] Real Time Overcurrent Detection Flag                               */
+            __IOM uint32_t OSTPF : 1;  /*!< [2..2] Oscillation Stop Detection Flag                                    */
+            __IOM uint32_t SSF   : 1;  /*!< [3..3] Software Stop Flag                                                 */
+            __IOM uint32_t PIDE  : 1;  /*!< [4..4] Port Input Detection Enable. Note: Can be modified only
+                                        *   once after a reset.                                                       */
+            __IOM uint32_t IOCE : 1;   /*!< [5..5] Enable for GPT Output-Disable Request. Note: Can be modified
+                                        *   only once after a reset.                                                  */
+            __IOM uint32_t OSTPE : 1;  /*!< [6..6] Oscillation Stop Detection Enable. Note: Can be modified
+                                        *   only once after a reset.                                                  */
             uint32_t             : 1;
-            __IOM uint32_t CDRE0 : 1;   /*!< [8..8] Comparator Disable Request Enable. Note: Can be modified
-                                         *   only once after a reset.                                                  */
-            __IOM uint32_t CDRE1 : 1;   /*!< [9..9] Comparator Disable Request Enable. Note: Can be modified
-                                         *   only once after a reset.                                                  */
-            __IOM uint32_t CDRE2 : 1;   /*!< [10..10] Comparator Disable Request Enable. Note: Can be modified
-                                         *   only once after a reset.                                                  */
-            __IOM uint32_t CDRE3 : 1;   /*!< [11..11] Comparator Disable Request Enable. Note: Can be modified
-                                         *   only once after a reset.                                                  */
-            __IOM uint32_t CDRE4 : 1;   /*!< [12..12] Comparator Disable Request Enable. Note: Can be modified
-                                         *   only once after a reset.                                                  */
-            __IOM uint32_t CDRE5 : 1;   /*!< [13..13] Comparator Disable Request Enable. Note: Can be modified
-                                         *   only once after a reset.                                                  */
-            uint32_t               : 2;
-            __IM uint32_t ST       : 1; /*!< [16..16] GTETRG Input Status Flag                                         */
-            uint32_t               : 7;
-            __IOM uint32_t DERR0ST : 1; /*!< [24..24] DSMIF0 Error Detection Flag                                      */
-            __IOM uint32_t DERR1ST : 1; /*!< [25..25] DSMIF1 Error Detection Flag                                      */
-            __IOM uint32_t DERR0E  : 1; /*!< [26..26] DSMIF0 Error Detection Enable                                    */
-            __IOM uint32_t DERR1E  : 1; /*!< [27..27] DSMIF1 Error Detection Enable                                    */
-            __IOM uint32_t INV     : 1; /*!< [28..28] GTETRG Input Reverse                                             */
-            __IOM uint32_t NFEN    : 1; /*!< [29..29] Noise Filter Enable                                              */
-            __IOM uint32_t NFCS    : 2; /*!< [31..30] Noise Filter Clock Select                                        */
+            __IOM uint32_t CDRE0 : 1;  /*!< [8..8] Comparator Disable Request Enable. Note: Can be modified
+                                        *   only once after a reset.                                                  */
+            __IOM uint32_t CDRE1 : 1;  /*!< [9..9] Comparator Disable Request Enable. Note: Can be modified
+                                        *   only once after a reset.                                                  */
+            __IOM uint32_t CDRE2 : 1;  /*!< [10..10] Comparator Disable Request Enable. Note: Can be modified
+                                        *   only once after a reset.                                                  */
+            __IOM uint32_t CDRE3 : 1;  /*!< [11..11] Comparator Disable Request Enable. Note: Can be modified
+                                        *   only once after a reset.                                                  */
+            __IOM uint32_t CDRE4 : 1;  /*!< [12..12] Comparator Disable Request Enable. Note: Can be modified
+                                        *   only once after a reset.                                                  */
+            __IOM uint32_t CDRE5 : 1;  /*!< [13..13] Comparator Disable Request Enable. Note: Can be modified
+                                        *   only once after a reset.                                                  */
+            uint32_t            : 2;
+            __IM uint32_t ST    : 1;   /*!< [16..16] GTETRG Input Status Flag                                         */
+            uint32_t            : 11;
+            __IOM uint32_t INV  : 1;   /*!< [28..28] GTETRG Input Reverse                                             */
+            __IOM uint32_t NFEN : 1;   /*!< [29..29] Noise Filter Enable                                              */
+            __IOM uint32_t NFCS : 2;   /*!< [31..30] Noise Filter Clock Select                                        */
         } POEGG_b;
     };
     __IM uint32_t RESERVED[15];
@@ -8175,6 +8323,24 @@ typedef struct                         /*!< (@ 0x40070000) R_SCI0 Structure     
 
         union
         {
+            __IOM uint8_t SSR_MANC;     /*!< (@ 0x00000004) Serial Status Register for Manchester Mode (SCMR.SMIF
+                                         *                  = 0, and MMR.MANEN = 1)                                    */
+
+            struct
+            {
+                __IOM uint8_t MER  : 1; /*!< [0..0] Manchester Error Flag Valid for Manchester mode only               */
+                __IM uint8_t  MPB  : 1; /*!< [1..1] Multi-Processor                                                    */
+                __IM uint8_t  TEND : 1; /*!< [2..2] Transmit End Flag                                                  */
+                __IOM uint8_t PER  : 1; /*!< [3..3] Parity Error Flag                                                  */
+                __IOM uint8_t FER  : 1; /*!< [4..4] Framing Error Flag                                                 */
+                __IOM uint8_t ORER : 1; /*!< [5..5] Overrun Error Flag                                                 */
+                __IOM uint8_t RDRF : 1; /*!< [6..6] Receive Data Full Flag                                             */
+                __IOM uint8_t TDRE : 1; /*!< [7..7] Transmit Data Empty Flag                                           */
+            } SSR_MANC_b;
+        };
+
+        union
+        {
             __IOM uint8_t SSR_SMCI;     /*!< (@ 0x00000004) Serial Status Register(SCMR.SMIF = 1)                      */
 
             struct
@@ -8358,6 +8524,21 @@ typedef struct                         /*!< (@ 0x40070000) R_SCI0 Structure     
             } FTDRHL_b;
         };
 
+        union
+        {
+            __IOM uint16_t TDRHL_MAN;     /*!< (@ 0x0000000E) Transmit Data Register for Manchester Mode (MMR.MANEN
+                                           *                  = 1)                                                       */
+
+            struct
+            {
+                __IOM uint16_t TDAT  : 9; /*!< [8..0] Serial transmit data                                               */
+                __IOM uint16_t MPBT  : 1; /*!< [9..9] Multi-processor Transfer Bit Flag                                  */
+                uint16_t             : 2;
+                __IOM uint16_t TSYNC : 1; /*!< [12..12] Transmit SYNC data bit                                           */
+                uint16_t             : 3;
+            } TDRHL_MAN_b;
+        };
+
         struct
         {
             union
@@ -8419,6 +8600,21 @@ typedef struct                         /*!< (@ 0x40070000) R_SCI0 Structure     
                 __IM uint16_t RDF  : 1; /*!< [14..14] Receive FIFO data full flag(It is same as SSR.RDF)               */
                 uint16_t           : 1;
             } FRDRHL_b;
+        };
+
+        union
+        {
+            __IM uint16_t RDRHL_MAN;     /*!< (@ 0x00000010) Receive Data Register for Manchester Mode (MMR.MANEN
+                                          *                  = 1)                                                       */
+
+            struct
+            {
+                __IM uint16_t RDAT  : 9; /*!< [8..0] Serial Receive Data                                                */
+                __IM uint16_t MPB   : 1; /*!< [9..9] Multi-processor Bit                                                */
+                uint16_t            : 2;
+                __IM uint16_t RSYNC : 1; /*!< [12..12] Receive SYNC data bit                                            */
+                uint16_t            : 3;
+            } RDRHL_MAN_b;
         };
 
         struct
@@ -8596,13 +8792,33 @@ typedef struct                         /*!< (@ 0x40070000) R_SCI0 Structure     
 
     union
     {
-        __IOM uint8_t ESMER;           /*!< (@ 0x00000020) Extended Serial Module Enable Register                     */
-
-        struct
+        union
         {
-            __IOM uint8_t ESME : 1;    /*!< [0..0] Extended Serial Mode Enable                                        */
-            uint8_t            : 7;
-        } ESMER_b;
+            __IOM uint8_t ESMER;        /*!< (@ 0x00000020) Extended Serial Module Enable Register                     */
+
+            struct
+            {
+                __IOM uint8_t ESME : 1; /*!< [0..0] Extended Serial Mode Enable                                        */
+                uint8_t            : 7;
+            } ESMER_b;
+        };
+
+        union
+        {
+            __IOM uint8_t MMR;            /*!< (@ 0x00000020) Manchester Mode Register                                   */
+
+            struct
+            {
+                __IOM uint8_t RMPOL  : 1; /*!< [0..0] Polarity of Received Manchester Code                               */
+                __IOM uint8_t TMPOL  : 1; /*!< [1..1] Polarity of Transmit Manchester Code                               */
+                __IOM uint8_t ERTEN  : 1; /*!< [2..2] Manchester Edge Retiming Enable                                    */
+                uint8_t              : 1;
+                __IOM uint8_t SYNVAL : 1; /*!< [4..4] SYNC Value Setting                                                 */
+                __IOM uint8_t SYNSEL : 1; /*!< [5..5] SYNC Select                                                        */
+                __IOM uint8_t SBSEL  : 1; /*!< [6..6] Start Bit Select                                                   */
+                __IOM uint8_t MANEN  : 1; /*!< [7..7] Manchester Mode Enable                                             */
+            } MMR_b;
+        };
     };
 
     union
@@ -8621,54 +8837,116 @@ typedef struct                         /*!< (@ 0x40070000) R_SCI0 Structure     
 
     union
     {
-        __IOM uint8_t CR1;             /*!< (@ 0x00000022) Control Register 1                                         */
-
-        struct
+        union
         {
-            __IOM uint8_t BFE   : 1;   /*!< [0..0] Break Field Enable                                                 */
-            __IOM uint8_t CF0RE : 1;   /*!< [1..1] Control Field 0 Reception Enable                                   */
-            __IOM uint8_t CF1DS : 2;   /*!< [3..2] Control Field 1 Data Register Select                               */
-            __IOM uint8_t PIBE  : 1;   /*!< [4..4] Priority Interrupt Bit Enable                                      */
-            __IOM uint8_t PIBS  : 3;   /*!< [7..5] Priority Interrupt Bit Select                                      */
-        } CR1_b;
+            __IOM uint8_t CR1;           /*!< (@ 0x00000022) Control Register 1                                         */
+
+            struct
+            {
+                __IOM uint8_t BFE   : 1; /*!< [0..0] Break Field Enable                                                 */
+                __IOM uint8_t CF0RE : 1; /*!< [1..1] Control Field 0 Reception Enable                                   */
+                __IOM uint8_t CF1DS : 2; /*!< [3..2] Control Field 1 Data Register Select                               */
+                __IOM uint8_t PIBE  : 1; /*!< [4..4] Priority Interrupt Bit Enable                                      */
+                __IOM uint8_t PIBS  : 3; /*!< [7..5] Priority Interrupt Bit Select                                      */
+            } CR1_b;
+        };
+
+        union
+        {
+            __IOM uint8_t TMPR;          /*!< (@ 0x00000022) Transmit Manchester Preface Setting Register               */
+
+            struct
+            {
+                __IOM uint8_t TPLEN : 4; /*!< [3..0] Transmit Preface Length                                            */
+                __IOM uint8_t TPPAT : 2; /*!< [5..4] Transmit Preface Pattern                                           */
+                uint8_t             : 2;
+            } TMPR_b;
+        };
     };
 
     union
     {
-        __IOM uint8_t CR2;             /*!< (@ 0x00000023) Control Register 2                                         */
-
-        struct
+        union
         {
-            __IOM uint8_t DFCS : 3;    /*!< [2..0] RXDXn Signal Digital Filter Clock Select                           */
-            uint8_t            : 1;
-            __IOM uint8_t BCCS : 2;    /*!< [5..4] Bus Collision Detection Clock Select                               */
-            __IOM uint8_t RTS  : 2;    /*!< [7..6] RXDXn Reception Sampling Timing Select                             */
-        } CR2_b;
+            __IOM uint8_t CR2;          /*!< (@ 0x00000023) Control Register 2                                         */
+
+            struct
+            {
+                __IOM uint8_t DFCS : 3; /*!< [2..0] RXDXn Signal Digital Filter Clock Select                           */
+                uint8_t            : 1;
+                __IOM uint8_t BCCS : 2; /*!< [5..4] Bus Collision Detection Clock Select                               */
+                __IOM uint8_t RTS  : 2; /*!< [7..6] RXDXn Reception Sampling Timing Select                             */
+            } CR2_b;
+        };
+
+        union
+        {
+            __IOM uint8_t RMPR;          /*!< (@ 0x00000023) Receive Manchester Preface Setting Register                */
+
+            struct
+            {
+                __IOM uint8_t RPLEN : 4; /*!< [3..0] Receive Preface Length                                             */
+                __IOM uint8_t RPPAT : 2; /*!< [5..4] Receive Preface Pattern                                            */
+                uint8_t             : 2;
+            } RMPR_b;
+        };
     };
 
     union
     {
-        __IOM uint8_t CR3;             /*!< (@ 0x00000024) Control Register 3                                         */
-
-        struct
+        union
         {
-            __IOM uint8_t SDST : 1;    /*!< [0..0] Start Frame Detection Start                                        */
-            uint8_t            : 7;
-        } CR3_b;
+            __IOM uint8_t CR3;          /*!< (@ 0x00000024) Control Register 3                                         */
+
+            struct
+            {
+                __IOM uint8_t SDST : 1; /*!< [0..0] Start Frame Detection Start                                        */
+                uint8_t            : 7;
+            } CR3_b;
+        };
+
+        union
+        {
+            __IOM uint8_t MESR;         /*!< (@ 0x00000024) Manchester Extended Error Status Register                  */
+
+            struct
+            {
+                __IOM uint8_t PFER : 1; /*!< [0..0] Preface Error Flag                                                 */
+                __IOM uint8_t SYER : 1; /*!< [1..1] SYNC Error Flag                                                    */
+                __IOM uint8_t SBER : 1; /*!< [2..2] Start Bit Error Flag                                               */
+                uint8_t            : 5;
+            } MESR_b;
+        };
     };
 
     union
     {
-        __IOM uint8_t PCR;             /*!< (@ 0x00000025) Port Control Register                                      */
-
-        struct
+        union
         {
-            __IOM uint8_t TXDXPS : 1;  /*!< [0..0] TXDXn Signal Polarity Select                                       */
-            __IOM uint8_t RXDXPS : 1;  /*!< [1..1] RXDXn Signal Polarity Select                                       */
-            uint8_t              : 2;
-            __IOM uint8_t SHARPS : 1;  /*!< [4..4] TXDXn/RXDXn Pin Multiplexing Select                                */
-            uint8_t              : 3;
-        } PCR_b;
+            __IOM uint8_t PCR;            /*!< (@ 0x00000025) Port Control Register                                      */
+
+            struct
+            {
+                __IOM uint8_t TXDXPS : 1; /*!< [0..0] TXDXn Signal Polarity Select                                       */
+                __IOM uint8_t RXDXPS : 1; /*!< [1..1] RXDXn Signal Polarity Select                                       */
+                uint8_t              : 2;
+                __IOM uint8_t SHARPS : 1; /*!< [4..4] TXDXn/RXDXn Pin Multiplexing Select                                */
+                uint8_t              : 3;
+            } PCR_b;
+        };
+
+        union
+        {
+            __IOM uint8_t MECR;           /*!< (@ 0x00000025) Manchester Extended Error Control Register                 */
+
+            struct
+            {
+                __IOM uint8_t PFEREN : 1; /*!< [0..0] Preface Error Flag                                                 */
+                __IOM uint8_t SYEREN : 1; /*!< [1..1] Receive SYNC Error Enable                                          */
+                __IOM uint8_t SBEREN : 1; /*!< [2..2] Start Bit Error Enable                                             */
+                uint8_t              : 5;
+            } MECR_b;
+        };
     };
 
     union
@@ -8784,7 +9062,21 @@ typedef struct                         /*!< (@ 0x40070000) R_SCI0 Structure     
     };
     __IOM uint8_t TPRE;                /*!< (@ 0x00000032) Timer Prescaler Register                                   */
     __IOM uint8_t TCNT;                /*!< (@ 0x00000033) Timer Count Register                                       */
-} R_SCI0_Type;                         /*!< Size = 52 (0x34)                                                          */
+    __IM uint16_t RESERVED1[4];
+
+    union
+    {
+        __IOM uint8_t SCIMSKEN;        /*!< (@ 0x0000003C) SCI5 TXD Output Mask Enable Register                       */
+
+        struct
+        {
+            __IOM uint8_t MSKEN : 1;   /*!< [0..0] SCI5 TXD Output Mask Enable                                        */
+            uint8_t             : 7;
+        } SCIMSKEN_b;
+    };
+    __IM uint8_t  RESERVED2;
+    __IM uint16_t RESERVED3;
+} R_SCI0_Type;                         /*!< Size = 64 (0x40)                                                          */
 
 /* =========================================================================================================================== */
 /* ================                                          R_SLCDC                                          ================ */
@@ -10704,14 +10996,14 @@ typedef struct                         /*!< (@ 0x4001E000) R_SYSTEM Structure   
 
         union
         {
-            __IOM uint8_t LVD1CMPCR;       /*!< (@ 0x00000417) Voltage Monitoring 1 Comparator Control Register           */
+            __IOM uint8_t LVD1CMPCR;      /*!< (@ 0x00000417) Voltage Monitoring 1 Comparator Control Register           */
 
             struct
             {
-                __IOM uint8_t LVD1LVL : 5; /*!< [4..0] Voltage Detection 1 Level Select (Standard voltage during
-                                            *   drop in voltage)                                                          */
-                uint8_t             : 2;
-                __IOM uint8_t LVD1E : 1;   /*!< [7..7] Voltage Detection 1 Enable                                         */
+                __IOM uint8_t LVDLVL : 5; /*!< [4..0] Voltage Detection 1 Level Select (Standard voltage during
+                                           *   drop in voltage)                                                          */
+                uint8_t            : 2;
+                __IOM uint8_t LVDE : 1;   /*!< [7..7] Voltage Detection 1 Enable                                         */
             } LVD1CMPCR_b;
         };
     };
@@ -10733,14 +11025,14 @@ typedef struct                         /*!< (@ 0x4001E000) R_SYSTEM Structure   
 
         union
         {
-            __IOM uint8_t LVD2CMPCR;       /*!< (@ 0x00000418) Voltage Monitoring 2 Comparator Control Register           */
+            __IOM uint8_t LVD2CMPCR;      /*!< (@ 0x00000418) Voltage Monitoring 2 Comparator Control Register           */
 
             struct
             {
-                __IOM uint8_t LVD2LVL : 3; /*!< [2..0] Voltage Detection 2 Level Select (Standard voltage during
-                                            *   drop in voltage)                                                          */
-                uint8_t             : 4;
-                __IOM uint8_t LVD2E : 1;   /*!< [7..7] Voltage Detection 2 Enable                                         */
+                __IOM uint8_t LVDLVL : 3; /*!< [2..0] Voltage Detection 2 Level Select (Standard voltage during
+                                           *   drop in voltage)                                                          */
+                uint8_t            : 4;
+                __IOM uint8_t LVDE : 1;   /*!< [7..7] Voltage Detection 2 Enable                                         */
             } LVD2CMPCR_b;
         };
     };
@@ -11363,7 +11655,9 @@ typedef struct                         /*!< (@ 0x407EC000) R_TSN Structure      
             };
         };
     };
-} R_TSN_Type;                          /*!< Size = 554 (0x22a)                                                        */
+    __IM uint16_t TSCDRR;              /*!< (@ 0x0000022A) Temperature Sensor Calibration Data Register
+                                        *                  (Room Temperature)                                         */
+} R_TSN_Type;                          /*!< Size = 556 (0x22c)                                                        */
 
 /* =========================================================================================================================== */
 /* ================                                           R_WDT                                           ================ */
@@ -12820,6 +13114,7 @@ typedef struct                         /*!< (@ 0x4009C000) R_SDADC_B Structure  
  #define R_SLCDC_BASE        0x40082000UL
  #define R_SPI0_BASE         0x40072000UL
  #define R_SPI1_BASE         0x40072100UL
+ #define R_SPI2_BASE         0x40072200UL
  #define R_SRAM_BASE         0x40002000UL
  #define R_SYSTEM_BASE       0x4001E000UL
  #define R_TRNG_BASE         0x400D1000UL
@@ -12839,6 +13134,7 @@ typedef struct                         /*!< (@ 0x4009C000) R_SDADC_B Structure  
  #define R_IRTC_BASE         0x40044000UL
  #define R_MACL_BASE         0x400A0000UL
  #define R_SDADC_B_BASE      0x4009C000UL
+ #define R_WDT1_BASE         0x40044300UL
 
 /** @} */ /* End of group Device_Peripheral_peripheralAddr */
 
@@ -12921,6 +13217,7 @@ typedef struct                         /*!< (@ 0x4009C000) R_SDADC_B Structure  
  #define R_SLCDC        ((R_SLCDC_Type *) R_SLCDC_BASE)
  #define R_SPI0         ((R_SPI0_Type *) R_SPI0_BASE)
  #define R_SPI1         ((R_SPI0_Type *) R_SPI1_BASE)
+ #define R_SPI2         ((R_SPI0_Type *) R_SPI2_BASE)
  #define R_SRAM         ((R_SRAM_Type *) R_SRAM_BASE)
  #define R_SYSTEM       ((R_SYSTEM_Type *) R_SYSTEM_BASE)
  #define R_TRNG         ((R_TRNG_Type *) R_TRNG_BASE)
@@ -12940,6 +13237,7 @@ typedef struct                         /*!< (@ 0x4009C000) R_SDADC_B Structure  
  #define R_IRTC         ((R_IRTC_Type *) R_IRTC_BASE)
  #define R_MACL         ((R_MACL_Type *) R_MACL_BASE)
  #define R_SDADC_B      ((R_SDADC_B_Type *) R_SDADC_B_BASE)
+ #define R_WDT1         ((R_WDT_Type *) R_WDT1_BASE)
 
 /** @} */ /* End of group Device_Peripheral_declaration */
 
@@ -13147,6 +13445,9 @@ typedef struct                         /*!< (@ 0x4009C000) R_SDADC_B Structure  
  #define R_BUS_BUSERRb_CLR_STERRCLR_Msk      (0x2UL)  /*!< STERRCLR (Bitfield-Mask: 0x01)                        */
  #define R_BUS_BUSERRb_CLR_SLERRCLR_Pos      (0UL)    /*!< SLERRCLR (Bit 0)                                      */
  #define R_BUS_BUSERRb_CLR_SLERRCLR_Msk      (0x1UL)  /*!< SLERRCLR (Bitfield-Mask: 0x01)                        */
+/* =========================================================  IRQEN  ========================================================= */
+ #define R_BUS_BUSERRb_IRQEN_EN_Pos          (0UL)    /*!< EN (Bit 0)                                            */
+ #define R_BUS_BUSERRb_IRQEN_EN_Msk          (0x1UL)  /*!< EN (Bitfield-Mask: 0x01)                              */
 
 /* =========================================================================================================================== */
 /* ================                                        DMACDTCERR                                         ================ */
@@ -13211,9 +13512,6 @@ typedef struct                         /*!< (@ 0x4009C000) R_SDADC_B Structure  
 /* =======================================================  CPU0SAHBI  ======================================================= */
  #define R_BUS_BUSSABT0_CPU0SAHBI_ARBS_Pos    (0UL)   /*!< ARBS (Bit 0)                                          */
  #define R_BUS_BUSSABT0_CPU0SAHBI_ARBS_Msk    (0x1UL) /*!< ARBS (Bitfield-Mask: 0x01)                            */
-/* =======================================================  CPU1TCMBI  ======================================================= */
- #define R_BUS_BUSSABT0_CPU1TCMBI_ARBS_Pos    (0UL)   /*!< ARBS (Bit 0)                                          */
- #define R_BUS_BUSSABT0_CPU1TCMBI_ARBS_Msk    (0x1UL) /*!< ARBS (Bitfield-Mask: 0x01)                            */
 
 /* =========================================================================================================================== */
 /* ================                                         BUSSABT1                                          ================ */
@@ -14269,6 +14567,9 @@ typedef struct                         /*!< (@ 0x4009C000) R_SDADC_B Structure  
  #define R_BUS_BUSDIVBYP_GDSSBPE_Msk     (0x8UL)     /*!< GDSSBPE (Bitfield-Mask: 0x01)                         */
  #define R_BUS_BUSDIVBYP_EDMABPE_Pos     (0UL)       /*!< EDMABPE (Bit 0)                                       */
  #define R_BUS_BUSDIVBYP_EDMABPE_Msk     (0x1UL)     /*!< EDMABPE (Bitfield-Mask: 0x01)                         */
+/* =======================================================  BUSTHRPUT  ======================================================= */
+ #define R_BUS_BUSTHRPUT_DIS_Pos         (0UL)       /*!< DIS (Bit 0)                                           */
+ #define R_BUS_BUSTHRPUT_DIS_Msk         (0x1UL)     /*!< DIS (Bitfield-Mask: 0x01)                             */
 
 /* =========================================================================================================================== */
 /* ================                                           R_CAC                                           ================ */
@@ -14419,30 +14720,49 @@ typedef struct                         /*!< (@ 0x4009C000) R_SDADC_B Structure  
 /* =========================================================================================================================== */
 
 /* =========================================================  DTCCR  ========================================================= */
- #define R_DTC_DTCCR_RRS_Pos         (4UL)          /*!< RRS (Bit 4)                                           */
- #define R_DTC_DTCCR_RRS_Msk         (0x10UL)       /*!< RRS (Bitfield-Mask: 0x01)                             */
+ #define R_DTC_DTCCR_RRS_Pos            (4UL)          /*!< RRS (Bit 4)                                           */
+ #define R_DTC_DTCCR_RRS_Msk            (0x10UL)       /*!< RRS (Bitfield-Mask: 0x01)                             */
 /* ========================================================  DTCVBR  ========================================================= */
- #define R_DTC_DTCVBR_DTCVBR_Pos     (0UL)          /*!< DTCVBR (Bit 0)                                        */
- #define R_DTC_DTCVBR_DTCVBR_Msk     (0xffffffffUL) /*!< DTCVBR (Bitfield-Mask: 0xffffffff)                    */
+ #define R_DTC_DTCVBR_DTCVBR_Pos        (0UL)          /*!< DTCVBR (Bit 0)                                        */
+ #define R_DTC_DTCVBR_DTCVBR_Msk        (0xffffffffUL) /*!< DTCVBR (Bitfield-Mask: 0xffffffff)                    */
+/* =======================================================  DTCADMOD  ======================================================== */
+ #define R_DTC_DTCADMOD_SHORT_Pos       (0UL)          /*!< SHORT (Bit 0)                                         */
+ #define R_DTC_DTCADMOD_SHORT_Msk       (0x1UL)        /*!< SHORT (Bitfield-Mask: 0x01)                           */
 /* =========================================================  DTCST  ========================================================= */
- #define R_DTC_DTCST_DTCST_Pos       (0UL)          /*!< DTCST (Bit 0)                                         */
- #define R_DTC_DTCST_DTCST_Msk       (0x1UL)        /*!< DTCST (Bitfield-Mask: 0x01)                           */
+ #define R_DTC_DTCST_DTCST_Pos          (0UL)          /*!< DTCST (Bit 0)                                         */
+ #define R_DTC_DTCST_DTCST_Msk          (0x1UL)        /*!< DTCST (Bitfield-Mask: 0x01)                           */
 /* ========================================================  DTCSTS  ========================================================= */
- #define R_DTC_DTCSTS_ACT_Pos        (15UL)         /*!< ACT (Bit 15)                                          */
- #define R_DTC_DTCSTS_ACT_Msk        (0x8000UL)     /*!< ACT (Bitfield-Mask: 0x01)                             */
- #define R_DTC_DTCSTS_VECN_Pos       (0UL)          /*!< VECN (Bit 0)                                          */
- #define R_DTC_DTCSTS_VECN_Msk       (0xffUL)       /*!< VECN (Bitfield-Mask: 0xff)                            */
+ #define R_DTC_DTCSTS_VECN_Pos          (0UL)          /*!< VECN (Bit 0)                                          */
+ #define R_DTC_DTCSTS_VECN_Msk          (0xffUL)       /*!< VECN (Bitfield-Mask: 0xff)                            */
+ #define R_DTC_DTCSTS_ACT_Pos           (15UL)         /*!< ACT (Bit 15)                                          */
+ #define R_DTC_DTCSTS_ACT_Msk           (0x8000UL)     /*!< ACT (Bitfield-Mask: 0x01)                             */
 /* =======================================================  DTCCR_SEC  ======================================================= */
- #define R_DTC_DTCCR_SEC_RRSS_Pos    (4UL)          /*!< RRSS (Bit 4)                                          */
- #define R_DTC_DTCCR_SEC_RRSS_Msk    (0x10UL)       /*!< RRSS (Bitfield-Mask: 0x01)                            */
+ #define R_DTC_DTCCR_SEC_RRS_Pos        (4UL)          /*!< RRS (Bit 4)                                           */
+ #define R_DTC_DTCCR_SEC_RRS_Msk        (0x10UL)       /*!< RRS (Bitfield-Mask: 0x01)                             */
 /* ======================================================  DTCVBR_SEC  ======================================================= */
+ #define R_DTC_DTCVBR_SEC_DTCVBR_Pos    (0UL)          /*!< DTCVBR (Bit 0)                                        */
+ #define R_DTC_DTCVBR_SEC_DTCVBR_Msk    (0xffffffffUL) /*!< DTCVBR (Bitfield-Mask: 0xffffffff)                    */
+/* ========================================================  DTCDISP  ======================================================== */
+ #define R_DTC_DTCDISP_DTCDISP_Pos      (0UL)          /*!< DTCDISP (Bit 0)                                       */
+ #define R_DTC_DTCDISP_DTCDISP_Msk      (0xffffffffUL) /*!< DTCDISP (Bitfield-Mask: 0xffffffff)                   */
 /* =========================================================  DTEVR  ========================================================= */
- #define R_DTC_DTEVR_DTEV_Pos        (0UL)          /*!< DTEV (Bit 0)                                          */
- #define R_DTC_DTEVR_DTEV_Msk        (0xffUL)       /*!< DTEV (Bitfield-Mask: 0xff)                            */
- #define R_DTC_DTEVR_DTEVSAM_Pos     (8UL)          /*!< DTEVSAM (Bit 8)                                       */
- #define R_DTC_DTEVR_DTEVSAM_Msk     (0x100UL)      /*!< DTEVSAM (Bitfield-Mask: 0x01)                         */
- #define R_DTC_DTEVR_DTESTA_Pos      (16UL)         /*!< DTESTA (Bit 16)                                       */
- #define R_DTC_DTEVR_DTESTA_Msk      (0x10000UL)    /*!< DTESTA (Bitfield-Mask: 0x01)                          */
+ #define R_DTC_DTEVR_DTEV_Pos           (0UL)          /*!< DTEV (Bit 0)                                          */
+ #define R_DTC_DTEVR_DTEV_Msk           (0xffUL)       /*!< DTEV (Bitfield-Mask: 0xff)                            */
+ #define R_DTC_DTEVR_DTEVSAM_Pos        (8UL)          /*!< DTEVSAM (Bit 8)                                       */
+ #define R_DTC_DTEVR_DTEVSAM_Msk        (0x100UL)      /*!< DTEVSAM (Bitfield-Mask: 0x01)                         */
+ #define R_DTC_DTEVR_DTESTA_Pos         (16UL)         /*!< DTESTA (Bit 16)                                       */
+ #define R_DTC_DTEVR_DTESTA_Msk         (0x10000UL)    /*!< DTESTA (Bitfield-Mask: 0x01)                          */
+/* ========================================================  DTCIBR  ========================================================= */
+ #define R_DTC_DTCIBR_DTCIBR_Pos        (10UL)         /*!< DTCIBR (Bit 10)                                       */
+ #define R_DTC_DTCIBR_DTCIBR_Msk        (0xfffffc00UL) /*!< DTCIBR (Bitfield-Mask: 0x3fffff)                      */
+/* =========================================================  DTCOR  ========================================================= */
+ #define R_DTC_DTCOR_SQTFRL_Pos         (0UL)          /*!< SQTFRL (Bit 0)                                        */
+ #define R_DTC_DTCOR_SQTFRL_Msk         (0x1UL)        /*!< SQTFRL (Bitfield-Mask: 0x01)                          */
+/* ========================================================  DTCSQE  ========================================================= */
+ #define R_DTC_DTCSQE_VECN_Pos          (0UL)          /*!< VECN (Bit 0)                                          */
+ #define R_DTC_DTCSQE_VECN_Msk          (0xffUL)       /*!< VECN (Bitfield-Mask: 0xff)                            */
+ #define R_DTC_DTCSQE_ESPSEL_Pos        (15UL)         /*!< ESPSEL (Bit 15)                                       */
+ #define R_DTC_DTCSQE_ESPSEL_Msk        (0x8000UL)     /*!< ESPSEL (Bitfield-Mask: 0x01)                          */
 
 /* =========================================================================================================================== */
 /* ================                                           R_ELC                                           ================ */
@@ -14830,6 +15150,8 @@ typedef struct                         /*!< (@ 0x4009C000) R_SDADC_B Structure  
  #define R_GPT0_GTDNSR_DSGTRGR_Pos         (0UL)          /*!< DSGTRGR (Bit 0)                                       */
  #define R_GPT0_GTDNSR_DSGTRGR_Msk         (0x1UL)        /*!< DSGTRGR (Bitfield-Mask: 0x01)                         */
 /* ========================================================  GTICASR  ======================================================== */
+ #define R_GPT0_GTICASR_ASOC_Pos           (24UL)         /*!< ASOC (Bit 24)                                         */
+ #define R_GPT0_GTICASR_ASOC_Msk           (0x1000000UL)  /*!< ASOC (Bitfield-Mask: 0x01)                            */
  #define R_GPT0_GTICASR_ASELC_Pos          (16UL)         /*!< ASELC (Bit 16)                                        */
  #define R_GPT0_GTICASR_ASELC_Msk          (0x10000UL)    /*!< ASELC (Bitfield-Mask: 0x01)                           */
  #define R_GPT0_GTICASR_ASCBFAH_Pos        (15UL)         /*!< ASCBFAH (Bit 15)                                      */
@@ -14853,6 +15175,8 @@ typedef struct                         /*!< (@ 0x4009C000) R_SDADC_B Structure  
  #define R_GPT0_GTICASR_ASGTRGR_Pos        (0UL)          /*!< ASGTRGR (Bit 0)                                       */
  #define R_GPT0_GTICASR_ASGTRGR_Msk        (0x1UL)        /*!< ASGTRGR (Bitfield-Mask: 0x01)                         */
 /* ========================================================  GTICBSR  ======================================================== */
+ #define R_GPT0_GTICBSR_BSOC_Pos           (24UL)         /*!< BSOC (Bit 24)                                         */
+ #define R_GPT0_GTICBSR_BSOC_Msk           (0x1000000UL)  /*!< BSOC (Bitfield-Mask: 0x01)                            */
  #define R_GPT0_GTICBSR_BSELC_Pos          (16UL)         /*!< BSELC (Bit 16)                                        */
  #define R_GPT0_GTICBSR_BSELC_Msk          (0x10000UL)    /*!< BSELC (Bitfield-Mask: 0x01)                           */
  #define R_GPT0_GTICBSR_BSCBFAH_Pos        (15UL)         /*!< BSCBFAH (Bit 15)                                      */
@@ -14892,9 +15216,15 @@ typedef struct                         /*!< (@ 0x4009C000) R_SDADC_B Structure  
  #define R_GPT0_GTCR_SCGTIOC_Msk           (0x200UL)      /*!< SCGTIOC (Bitfield-Mask: 0x01)                         */
  #define R_GPT0_GTCR_ICDS_Pos              (8UL)          /*!< ICDS (Bit 8)                                          */
  #define R_GPT0_GTCR_ICDS_Msk              (0x100UL)      /*!< ICDS (Bitfield-Mask: 0x01)                            */
+ #define R_GPT0_GTCR_BINV_Pos              (5UL)          /*!< BINV (Bit 5)                                          */
+ #define R_GPT0_GTCR_BINV_Msk              (0x20UL)       /*!< BINV (Bitfield-Mask: 0x01)                            */
+ #define R_GPT0_GTCR_AINV_Pos              (4UL)          /*!< AINV (Bit 4)                                          */
+ #define R_GPT0_GTCR_AINV_Msk              (0x10UL)       /*!< AINV (Bitfield-Mask: 0x01)                            */
  #define R_GPT0_GTCR_CST_Pos               (0UL)          /*!< CST (Bit 0)                                           */
  #define R_GPT0_GTCR_CST_Msk               (0x1UL)        /*!< CST (Bitfield-Mask: 0x01)                             */
 /* =======================================================  GTUDDTYC  ======================================================== */
+ #define R_GPT0_GTUDDTYC_OABDTYT_Pos       (28UL)         /*!< OABDTYT (Bit 28)                                      */
+ #define R_GPT0_GTUDDTYC_OABDTYT_Msk       (0x10000000UL) /*!< OABDTYT (Bitfield-Mask: 0x01)                         */
  #define R_GPT0_GTUDDTYC_OBDTYR_Pos        (27UL)         /*!< OBDTYR (Bit 27)                                       */
  #define R_GPT0_GTUDDTYC_OBDTYR_Msk        (0x8000000UL)  /*!< OBDTYR (Bitfield-Mask: 0x01)                          */
  #define R_GPT0_GTUDDTYC_OBDTYF_Pos        (26UL)         /*!< OBDTYF (Bit 26)                                       */
@@ -14969,7 +15299,13 @@ typedef struct                         /*!< (@ 0x4009C000) R_SDADC_B Structure  
  #define R_GPT0_GTINTAD_SCFPO_Msk          (0x4000UL)     /*!< SCFPO (Bitfield-Mask: 0x01)                           */
  #define R_GPT0_GTINTAD_SCF_Pos            (8UL)          /*!< SCF (Bit 8)                                           */
  #define R_GPT0_GTINTAD_SCF_Msk            (0x100UL)      /*!< SCF (Bitfield-Mask: 0x01)                             */
+ #define R_GPT0_GTINTAD_GTINTPR_Pos        (6UL)          /*!< GTINTPR (Bit 6)                                       */
+ #define R_GPT0_GTINTAD_GTINTPR_Msk        (0xc0UL)       /*!< GTINTPR (Bitfield-Mask: 0x03)                         */
+ #define R_GPT0_GTINTAD_GTINT_Pos          (0UL)          /*!< GTINT (Bit 0)                                         */
+ #define R_GPT0_GTINTAD_GTINT_Msk          (0x1UL)        /*!< GTINT (Bitfield-Mask: 0x01)                           */
 /* =========================================================  GTST  ========================================================== */
+ #define R_GPT0_GTST_PCF_Pos               (31UL)         /*!< PCF (Bit 31)                                          */
+ #define R_GPT0_GTST_PCF_Msk               (0x80000000UL) /*!< PCF (Bitfield-Mask: 0x01)                             */
  #define R_GPT0_GTST_OABLF_Pos             (30UL)         /*!< OABLF (Bit 30)                                        */
  #define R_GPT0_GTST_OABLF_Msk             (0x40000000UL) /*!< OABLF (Bitfield-Mask: 0x01)                           */
  #define R_GPT0_GTST_OABHF_Pos             (29UL)         /*!< OABHF (Bit 29)                                        */
@@ -15006,8 +15342,6 @@ typedef struct                         /*!< (@ 0x4009C000) R_SDADC_B Structure  
  #define R_GPT0_GTST_TCFB_Msk              (0x2UL)        /*!< TCFB (Bitfield-Mask: 0x01)                            */
  #define R_GPT0_GTST_TCFA_Pos              (0UL)          /*!< TCFA (Bit 0)                                          */
  #define R_GPT0_GTST_TCFA_Msk              (0x1UL)        /*!< TCFA (Bitfield-Mask: 0x01)                            */
- #define R_GPT0_GTST_PCF_Pos               (31UL)         /*!< PCF (Bit 31)                                          */
- #define R_GPT0_GTST_PCF_Msk               (0x80000000UL) /*!< PCF (Bitfield-Mask: 0x01)                             */
 /* =========================================================  GTBER  ========================================================= */
  #define R_GPT0_GTBER_ADTDB_Pos            (30UL)         /*!< ADTDB (Bit 30)                                        */
  #define R_GPT0_GTBER_ADTDB_Msk            (0x40000000UL) /*!< ADTDB (Bitfield-Mask: 0x01)                           */
@@ -15193,6 +15527,24 @@ typedef struct                         /*!< (@ 0x4009C000) R_SDADC_B Structure  
  #define R_GPT0_GTPC_ASTP_Msk              (0x100UL)      /*!< ASTP (Bitfield-Mask: 0x01)                            */
  #define R_GPT0_GTPC_PCNT_Pos              (16UL)         /*!< PCNT (Bit 16)                                         */
  #define R_GPT0_GTPC_PCNT_Msk              (0xfff0000UL)  /*!< PCNT (Bitfield-Mask: 0xfff)                           */
+/* =======================================================  GTADCMSC  ======================================================== */
+ #define R_GPT0_GTADCMSC_ADCMSCNT_Pos      (12UL)         /*!< ADCMSCNT (Bit 12)                                     */
+ #define R_GPT0_GTADCMSC_ADCMSCNT_Msk      (0xf000UL)     /*!< ADCMSCNT (Bitfield-Mask: 0x0f)                        */
+ #define R_GPT0_GTADCMSC_ADCMSCNTIV_Pos    (8UL)          /*!< ADCMSCNTIV (Bit 8)                                    */
+ #define R_GPT0_GTADCMSC_ADCMSCNTIV_Msk    (0xf00UL)      /*!< ADCMSCNTIV (Bitfield-Mask: 0x0f)                      */
+ #define R_GPT0_GTADCMSC_ADCMST_Pos        (4UL)          /*!< ADCMST (Bit 4)                                        */
+ #define R_GPT0_GTADCMSC_ADCMST_Msk        (0xf0UL)       /*!< ADCMST (Bitfield-Mask: 0x0f)                          */
+ #define R_GPT0_GTADCMSC_ADCMSC_Pos        (0UL)          /*!< ADCMSC (Bit 0)                                        */
+ #define R_GPT0_GTADCMSC_ADCMSC_Msk        (0x3UL)        /*!< ADCMSC (Bitfield-Mask: 0x03)                          */
+/* =======================================================  GTADCMSS  ======================================================== */
+ #define R_GPT0_GTADCMSS_ADCMSAL_Pos       (0UL)          /*!< ADCMSAL (Bit 0)                                       */
+ #define R_GPT0_GTADCMSS_ADCMSAL_Msk       (0x7UL)        /*!< ADCMSAL (Bitfield-Mask: 0x07)                         */
+ #define R_GPT0_GTADCMSS_ADCMSBL_Pos       (4UL)          /*!< ADCMSBL (Bit 4)                                       */
+ #define R_GPT0_GTADCMSS_ADCMSBL_Msk       (0x70UL)       /*!< ADCMSBL (Bitfield-Mask: 0x07)                         */
+ #define R_GPT0_GTADCMSS_ADCMBSA_Pos       (16UL)         /*!< ADCMBSA (Bit 16)                                      */
+ #define R_GPT0_GTADCMSS_ADCMBSA_Msk       (0x70000UL)    /*!< ADCMBSA (Bitfield-Mask: 0x07)                         */
+ #define R_GPT0_GTADCMSS_ADCMBSB_Pos       (20UL)         /*!< ADCMBSB (Bit 20)                                      */
+ #define R_GPT0_GTADCMSS_ADCMBSB_Msk       (0x700000UL)   /*!< ADCMBSB (Bitfield-Mask: 0x07)                         */
 /* ========================================================  GTSECSR  ======================================================== */
  #define R_GPT0_GTSECSR_SECSEL0_Pos        (0UL)          /*!< SECSEL0 (Bit 0)                                       */
  #define R_GPT0_GTSECSR_SECSEL0_Msk        (0x1UL)        /*!< SECSEL0 (Bitfield-Mask: 0x01)                         */
@@ -15378,10 +15730,6 @@ typedef struct                         /*!< (@ 0x4009C000) R_SDADC_B Structure  
  #define R_GPT_POEG0_POEGG_NFEN_Msk       (0x20000000UL) /*!< NFEN (Bitfield-Mask: 0x01)                            */
  #define R_GPT_POEG0_POEGG_INV_Pos        (28UL)         /*!< INV (Bit 28)                                          */
  #define R_GPT_POEG0_POEGG_INV_Msk        (0x10000000UL) /*!< INV (Bitfield-Mask: 0x01)                             */
- #define R_GPT_POEG0_POEGG_DERRE_Pos      (26UL)         /*!< DERRE (Bit 26)                                        */
- #define R_GPT_POEG0_POEGG_DERRE_Msk      (0x4000000UL)  /*!< DERRE (Bitfield-Mask: 0x01)                           */
- #define R_GPT_POEG0_POEGG_DERRST_Pos     (24UL)         /*!< DERRST (Bit 24)                                       */
- #define R_GPT_POEG0_POEGG_DERRST_Msk     (0x1000000UL)  /*!< DERRST (Bitfield-Mask: 0x01)                          */
  #define R_GPT_POEG0_POEGG_ST_Pos         (16UL)         /*!< ST (Bit 16)                                           */
  #define R_GPT_POEG0_POEGG_ST_Msk         (0x10000UL)    /*!< ST (Bitfield-Mask: 0x01)                              */
  #define R_GPT_POEG0_POEGG_CDRE_Pos       (8UL)          /*!< CDRE (Bit 8)                                          */
@@ -16329,6 +16677,23 @@ typedef struct                         /*!< (@ 0x4009C000) R_SDADC_B Structure  
  #define R_SCI0_SSR_FIFO_TEND_Msk       (0x4UL)    /*!< TEND (Bitfield-Mask: 0x01)                            */
  #define R_SCI0_SSR_FIFO_DR_Pos         (0UL)      /*!< DR (Bit 0)                                            */
  #define R_SCI0_SSR_FIFO_DR_Msk         (0x1UL)    /*!< DR (Bitfield-Mask: 0x01)                              */
+/* =======================================================  SSR_MANC  ======================================================== */
+ #define R_SCI0_SSR_MANC_TDRE_Pos       (7UL)      /*!< TDRE (Bit 7)                                          */
+ #define R_SCI0_SSR_MANC_TDRE_Msk       (0x80UL)   /*!< TDRE (Bitfield-Mask: 0x01)                            */
+ #define R_SCI0_SSR_MANC_RDRF_Pos       (6UL)      /*!< RDRF (Bit 6)                                          */
+ #define R_SCI0_SSR_MANC_RDRF_Msk       (0x40UL)   /*!< RDRF (Bitfield-Mask: 0x01)                            */
+ #define R_SCI0_SSR_MANC_ORER_Pos       (5UL)      /*!< ORER (Bit 5)                                          */
+ #define R_SCI0_SSR_MANC_ORER_Msk       (0x20UL)   /*!< ORER (Bitfield-Mask: 0x01)                            */
+ #define R_SCI0_SSR_MANC_FER_Pos        (4UL)      /*!< FER (Bit 4)                                           */
+ #define R_SCI0_SSR_MANC_FER_Msk        (0x10UL)   /*!< FER (Bitfield-Mask: 0x01)                             */
+ #define R_SCI0_SSR_MANC_PER_Pos        (3UL)      /*!< PER (Bit 3)                                           */
+ #define R_SCI0_SSR_MANC_PER_Msk        (0x8UL)    /*!< PER (Bitfield-Mask: 0x01)                             */
+ #define R_SCI0_SSR_MANC_TEND_Pos       (2UL)      /*!< TEND (Bit 2)                                          */
+ #define R_SCI0_SSR_MANC_TEND_Msk       (0x4UL)    /*!< TEND (Bitfield-Mask: 0x01)                            */
+ #define R_SCI0_SSR_MANC_MPB_Pos        (1UL)      /*!< MPB (Bit 1)                                           */
+ #define R_SCI0_SSR_MANC_MPB_Msk        (0x2UL)    /*!< MPB (Bitfield-Mask: 0x01)                             */
+ #define R_SCI0_SSR_MANC_MER_Pos        (0UL)      /*!< MER (Bit 0)                                           */
+ #define R_SCI0_SSR_MANC_MER_Msk        (0x1UL)    /*!< MER (Bitfield-Mask: 0x01)                             */
 /* =======================================================  SSR_SMCI  ======================================================== */
  #define R_SCI0_SSR_SMCI_TDRE_Pos       (7UL)      /*!< TDRE (Bit 7)                                          */
  #define R_SCI0_SSR_SMCI_TDRE_Msk       (0x80UL)   /*!< TDRE (Bitfield-Mask: 0x01)                            */
@@ -16457,6 +16822,20 @@ typedef struct                         /*!< (@ 0x4009C000) R_SDADC_B Structure  
  #define R_SCI0_FRDRHL_MPB_Msk          (0x200UL)  /*!< MPB (Bitfield-Mask: 0x01)                             */
  #define R_SCI0_FRDRHL_RDAT_Pos         (0UL)      /*!< RDAT (Bit 0)                                          */
  #define R_SCI0_FRDRHL_RDAT_Msk         (0x1ffUL)  /*!< RDAT (Bitfield-Mask: 0x1ff)                           */
+/* =======================================================  TDRHL_MAN  ======================================================= */
+ #define R_SCI0_TDRHL_MAN_TDAT_Pos      (0UL)      /*!< TDAT (Bit 0)                                          */
+ #define R_SCI0_TDRHL_MAN_TDAT_Msk      (0x1ffUL)  /*!< TDAT (Bitfield-Mask: 0x1ff)                           */
+ #define R_SCI0_TDRHL_MAN_MPBT_Pos      (9UL)      /*!< MPBT (Bit 9)                                          */
+ #define R_SCI0_TDRHL_MAN_MPBT_Msk      (0x200UL)  /*!< MPBT (Bitfield-Mask: 0x01)                            */
+ #define R_SCI0_TDRHL_MAN_TSYNC_Pos     (12UL)     /*!< TSYNC (Bit 12)                                        */
+ #define R_SCI0_TDRHL_MAN_TSYNC_Msk     (0x1000UL) /*!< TSYNC (Bitfield-Mask: 0x01)                           */
+/* =======================================================  RDRHL_MAN  ======================================================= */
+ #define R_SCI0_RDRHL_MAN_RDAT_Pos      (0UL)      /*!< RDAT (Bit 0)                                          */
+ #define R_SCI0_RDRHL_MAN_RDAT_Msk      (0x1ffUL)  /*!< RDAT (Bitfield-Mask: 0x1ff)                           */
+ #define R_SCI0_RDRHL_MAN_MPB_Pos       (9UL)      /*!< MPB (Bit 9)                                           */
+ #define R_SCI0_RDRHL_MAN_MPB_Msk       (0x200UL)  /*!< MPB (Bitfield-Mask: 0x01)                             */
+ #define R_SCI0_RDRHL_MAN_RSYNC_Pos     (12UL)     /*!< RSYNC (Bit 12)                                        */
+ #define R_SCI0_RDRHL_MAN_RSYNC_Msk     (0x1000UL) /*!< RSYNC (Bitfield-Mask: 0x01)                           */
 /* =========================================================  FRDRH  ========================================================= */
  #define R_SCI0_FRDRH_RDF_Pos           (6UL)      /*!< RDF (Bit 6)                                           */
  #define R_SCI0_FRDRH_RDF_Msk           (0x40UL)   /*!< RDF (Bitfield-Mask: 0x01)                             */
@@ -16671,6 +17050,48 @@ typedef struct                         /*!< (@ 0x4009C000) R_SDADC_B Structure  
  #define R_SCI0_TMR_TCSS_Msk            (0x70UL) /*!< TCSS (Bitfield-Mask: 0x07)                            */
 /* =========================================================  TPRE  ========================================================== */
 /* =========================================================  TCNT  ========================================================== */
+/* =======================================================  SCIMSKEN  ======================================================== */
+ #define R_SCI0_SCIMSKEN_MSKEN_Pos      (0UL)    /*!< MSKEN (Bit 0)                                         */
+ #define R_SCI0_SCIMSKEN_MSKEN_Msk      (0x1UL)  /*!< MSKEN (Bitfield-Mask: 0x01)                           */
+/* ==========================================================  MMR  ========================================================== */
+ #define R_SCI0_MMR_MANEN_Pos           (7UL)    /*!< MANEN (Bit 7)                                         */
+ #define R_SCI0_MMR_MANEN_Msk           (0x80UL) /*!< MANEN (Bitfield-Mask: 0x01)                           */
+ #define R_SCI0_MMR_SBSEL_Pos           (6UL)    /*!< SBSEL (Bit 6)                                         */
+ #define R_SCI0_MMR_SBSEL_Msk           (0x40UL) /*!< SBSEL (Bitfield-Mask: 0x01)                           */
+ #define R_SCI0_MMR_SYNSEL_Pos          (5UL)    /*!< SYNSEL (Bit 5)                                        */
+ #define R_SCI0_MMR_SYNSEL_Msk          (0x20UL) /*!< SYNSEL (Bitfield-Mask: 0x01)                          */
+ #define R_SCI0_MMR_SYNVAL_Pos          (4UL)    /*!< SYNVAL (Bit 4)                                        */
+ #define R_SCI0_MMR_SYNVAL_Msk          (0x10UL) /*!< SYNVAL (Bitfield-Mask: 0x01)                          */
+ #define R_SCI0_MMR_ERTEN_Pos           (2UL)    /*!< ERTEN (Bit 2)                                         */
+ #define R_SCI0_MMR_ERTEN_Msk           (0x4UL)  /*!< ERTEN (Bitfield-Mask: 0x01)                           */
+ #define R_SCI0_MMR_TMPOL_Pos           (1UL)    /*!< TMPOL (Bit 1)                                         */
+ #define R_SCI0_MMR_TMPOL_Msk           (0x2UL)  /*!< TMPOL (Bitfield-Mask: 0x01)                           */
+ #define R_SCI0_MMR_RMPOL_Pos           (0UL)    /*!< RMPOL (Bit 0)                                         */
+ #define R_SCI0_MMR_RMPOL_Msk           (0x1UL)  /*!< RMPOL (Bitfield-Mask: 0x01)                           */
+/* =========================================================  TMPR  ========================================================== */
+ #define R_SCI0_TMPR_TPLEN_Pos          (0UL)    /*!< TPLEN (Bit 0)                                         */
+ #define R_SCI0_TMPR_TPLEN_Msk          (0xfUL)  /*!< TPLEN (Bitfield-Mask: 0x0f)                           */
+ #define R_SCI0_TMPR_TPPAT_Pos          (4UL)    /*!< TPPAT (Bit 4)                                         */
+ #define R_SCI0_TMPR_TPPAT_Msk          (0x30UL) /*!< TPPAT (Bitfield-Mask: 0x03)                           */
+/* =========================================================  RMPR  ========================================================== */
+ #define R_SCI0_RMPR_RPLEN_Pos          (0UL)    /*!< RPLEN (Bit 0)                                         */
+ #define R_SCI0_RMPR_RPLEN_Msk          (0xfUL)  /*!< RPLEN (Bitfield-Mask: 0x0f)                           */
+ #define R_SCI0_RMPR_RPPAT_Pos          (4UL)    /*!< RPPAT (Bit 4)                                         */
+ #define R_SCI0_RMPR_RPPAT_Msk          (0x30UL) /*!< RPPAT (Bitfield-Mask: 0x03)                           */
+/* =========================================================  MESR  ========================================================== */
+ #define R_SCI0_MESR_PFER_Pos           (0UL)    /*!< PFER (Bit 0)                                          */
+ #define R_SCI0_MESR_PFER_Msk           (0x1UL)  /*!< PFER (Bitfield-Mask: 0x01)                            */
+ #define R_SCI0_MESR_SYER_Pos           (1UL)    /*!< SYER (Bit 1)                                          */
+ #define R_SCI0_MESR_SYER_Msk           (0x2UL)  /*!< SYER (Bitfield-Mask: 0x01)                            */
+ #define R_SCI0_MESR_SBER_Pos           (2UL)    /*!< SBER (Bit 2)                                          */
+ #define R_SCI0_MESR_SBER_Msk           (0x4UL)  /*!< SBER (Bitfield-Mask: 0x01)                            */
+/* =========================================================  MECR  ========================================================== */
+ #define R_SCI0_MECR_PFEREN_Pos         (0UL)    /*!< PFEREN (Bit 0)                                        */
+ #define R_SCI0_MECR_PFEREN_Msk         (0x1UL)  /*!< PFEREN (Bitfield-Mask: 0x01)                          */
+ #define R_SCI0_MECR_SYEREN_Pos         (1UL)    /*!< SYEREN (Bit 1)                                        */
+ #define R_SCI0_MECR_SYEREN_Msk         (0x2UL)  /*!< SYEREN (Bitfield-Mask: 0x01)                          */
+ #define R_SCI0_MECR_SBEREN_Pos         (2UL)    /*!< SBEREN (Bit 2)                                        */
+ #define R_SCI0_MECR_SBEREN_Msk         (0x4UL)  /*!< SBEREN (Bitfield-Mask: 0x01)                          */
 
 /* =========================================================================================================================== */
 /* ================                                          R_SLCDC                                          ================ */
@@ -17292,20 +17713,20 @@ typedef struct                         /*!< (@ 0x4009C000) R_SDADC_B Structure  
  #define R_SYSTEM_LVCMPCR_LVD1E_Pos                (5UL)          /*!< LVD1E (Bit 5)                                         */
  #define R_SYSTEM_LVCMPCR_LVD1E_Msk                (0x20UL)       /*!< LVD1E (Bitfield-Mask: 0x01)                           */
 /* =======================================================  LVD1CMPCR  ======================================================= */
- #define R_SYSTEM_LVD1CMPCR_LVD1LVL_Pos            (0UL)          /*!< LVD1LVL (Bit 0)                                       */
- #define R_SYSTEM_LVD1CMPCR_LVD1LVL_Msk            (0x1fUL)       /*!< LVD1LVL (Bitfield-Mask: 0x1f)                         */
- #define R_SYSTEM_LVD1CMPCR_LVD1E_Pos              (7UL)          /*!< LVD1E (Bit 7)                                         */
- #define R_SYSTEM_LVD1CMPCR_LVD1E_Msk              (0x80UL)       /*!< LVD1E (Bitfield-Mask: 0x01)                           */
+ #define R_SYSTEM_LVD1CMPCR_LVDLVL_Pos             (0UL)          /*!< LVDLVL (Bit 0)                                        */
+ #define R_SYSTEM_LVD1CMPCR_LVDLVL_Msk             (0x1fUL)       /*!< LVDLVL (Bitfield-Mask: 0x1f)                          */
+ #define R_SYSTEM_LVD1CMPCR_LVDE_Pos               (7UL)          /*!< LVDE (Bit 7)                                          */
+ #define R_SYSTEM_LVD1CMPCR_LVDE_Msk               (0x80UL)       /*!< LVDE (Bitfield-Mask: 0x01)                            */
 /* ========================================================  LVDLVLR  ======================================================== */
  #define R_SYSTEM_LVDLVLR_LVD2LVL_Pos              (5UL)          /*!< LVD2LVL (Bit 5)                                       */
  #define R_SYSTEM_LVDLVLR_LVD2LVL_Msk              (0xe0UL)       /*!< LVD2LVL (Bitfield-Mask: 0x07)                         */
  #define R_SYSTEM_LVDLVLR_LVD1LVL_Pos              (0UL)          /*!< LVD1LVL (Bit 0)                                       */
  #define R_SYSTEM_LVDLVLR_LVD1LVL_Msk              (0x1fUL)       /*!< LVD1LVL (Bitfield-Mask: 0x1f)                         */
 /* =======================================================  LVD2CMPCR  ======================================================= */
- #define R_SYSTEM_LVD2CMPCR_LVD2LVL_Pos            (0UL)          /*!< LVD2LVL (Bit 0)                                       */
- #define R_SYSTEM_LVD2CMPCR_LVD2LVL_Msk            (0x7UL)        /*!< LVD2LVL (Bitfield-Mask: 0x07)                         */
- #define R_SYSTEM_LVD2CMPCR_LVD2E_Pos              (7UL)          /*!< LVD2E (Bit 7)                                         */
- #define R_SYSTEM_LVD2CMPCR_LVD2E_Msk              (0x80UL)       /*!< LVD2E (Bitfield-Mask: 0x01)                           */
+ #define R_SYSTEM_LVD2CMPCR_LVDLVL_Pos             (0UL)          /*!< LVDLVL (Bit 0)                                        */
+ #define R_SYSTEM_LVD2CMPCR_LVDLVL_Msk             (0x7UL)        /*!< LVDLVL (Bitfield-Mask: 0x07)                          */
+ #define R_SYSTEM_LVD2CMPCR_LVDE_Pos               (7UL)          /*!< LVDE (Bit 7)                                          */
+ #define R_SYSTEM_LVD2CMPCR_LVDE_Msk               (0x80UL)       /*!< LVDE (Bitfield-Mask: 0x01)                            */
 /* ========================================================  LVD1CR0  ======================================================== */
  #define R_SYSTEM_LVD1CR0_RN_Pos                   (7UL)          /*!< RN (Bit 7)                                            */
  #define R_SYSTEM_LVD1CR0_RN_Msk                   (0x80UL)       /*!< RN (Bitfield-Mask: 0x01)                              */
@@ -17788,6 +18209,7 @@ typedef struct                         /*!< (@ 0x4009C000) R_SDADC_B Structure  
 /* ========================================================  TSCDRL  ========================================================= */
  #define R_TSN_TSCDRL_TSCDRL_Pos    (0UL)    /*!< TSCDRL (Bit 0)                                        */
  #define R_TSN_TSCDRL_TSCDRL_Msk    (0xffUL) /*!< TSCDRL (Bitfield-Mask: 0xff)                          */
+/* ========================================================  TSCDRR  ========================================================= */
 
 /* =========================================================================================================================== */
 /* ================                                           R_WDT                                           ================ */
